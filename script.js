@@ -1,4 +1,4 @@
-const products = [
+const featuredProducts = [
   {
     id: "gtb-1095",
     name: "Окрасочный аппарат GTB-1095",
@@ -8,6 +8,9 @@ const products = [
     badge: "Выгодная цена",
     category: "painting",
     description: "Безвоздушный окрасочный аппарат на тележке для профессиональной работы с лакокрасочными материалами.",
+    model: "GTB-1095",
+    drive: "electric",
+    flowLpm: 6,
     specs: [["Производительность", "6 л/мин"], ["Мощность", "3 500 Вт"], ["Напряжение", "220 В"], ["Максимальное давление", "230 бар"], ["Максимальное сопло", "0.043″"], ["Тип", "Электрический, безвоздушный"]],
     images: [
       ["gtb-1095-main.png", "Аппарат GTB-1095 и основные параметры"],
@@ -16,6 +19,7 @@ const products = [
       ["gtb-1095-detail.png", "Деталь аппарата GTB-1095"],
     ],
     materials: "Краски и лакокрасочные материалы для безвоздушного распыления.",
+    featured: true,
   },
   {
     id: "putter-9528x",
@@ -25,7 +29,11 @@ const products = [
     badge: "Новинка",
     category: "painting",
     description: "Мощный окрасочный аппарат с системой QuickReel для удобного сматывания и хранения шланга.",
-    specs: [["Производительность", "11 л/мин"], ["Мощность", "5 000 Вт"], ["Максимальное давление", "230 бар"], ["Максимальное сопло", "0.049″"], ["Система шланга", "QuickReel"], ["Гарантия", "2 года от магазина"], ["Тип", "Электрический, безвоздушный"]],
+    manufacturer: "PUTTER",
+    model: "PT-9528-X",
+    drive: "electric",
+    flowLpm: 10.5,
+    specs: [["Мощность", "5 000 Вт"], ["Напряжение / частота", "220 В / 50–60 Гц"], ["Максимальная подача", "10,5 л/мин"], ["Система шланга", "QuickReel"], ["Гарантия", "2 года от магазина"], ["Тип", "Электрический, безвоздушный"]],
     images: [
       ["putter-9528x-main.png", "PUTTER 9528-X QuickReel и параметры"],
       ["putter-9528x-front.png", "PUTTER 9528-X, вид спереди"],
@@ -33,17 +41,33 @@ const products = [
       ["putter-9528x-kit.png", "Комплект PUTTER 9528-X"],
     ],
     materials: "Густые шпаклёвки, краски и огнезащитные материалы.",
+    featured: true,
+    features: ["QuickReel"],
   },
 ];
+const manufacturerProducts = window.NORD_MANUFACTURER_PRODUCTS;
+if (!Array.isArray(manufacturerProducts)) throw new Error("Manufacturer product data did not load");
+const productMap = new Map(featuredProducts.map((product) => [product.id, product]));
+manufacturerProducts.forEach((product) => {
+  const existing = productMap.get(product.id);
+  productMap.set(product.id, existing
+    ? { ...existing, ...product, price: existing.price, oldPrice: existing.oldPrice, badge: existing.badge, featured: existing.featured }
+    : product);
+});
+const products = [...productMap.values()];
 const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
 let revealObserver;
 const revealSelector = ".page-hero, .gallery-main, .section-heading, .category-card, .category-tile, .product-card, .step-card, .article-card, .benefit, .info-card, .rent-card, .fact, .summary-card, .empty-state, .form-card, .login-card, .contact-band";
 
 const categories = [
   { id: "painting", name: "Окрасочное оборудование", description: "Аппараты для безвоздушного нанесения красок и покрытий.", icon: "01", children: [["Аппараты до 6 л/мин", "category.html?category=painting&flow=compact"], ["Аппараты от 10 л/мин", "category.html?category=painting&flow=high"], ["Модели с QuickReel", "category.html?category=painting&feature=quickreel"]] },
-  { id: "putty", name: "Шпаклёвочные станции", description: "Оборудование и решения для механизированной отделки.", icon: "02", children: [["Шнековые станции", "category.html?category=putty&subcategory=screw"], ["Станции с компрессором", "category.html?category=putty&subcategory=compressor"]] },
-  { id: "fire", name: "Оборудование для огнезащиты", description: "Подбор техники под тип материала и задачу.", icon: "03", children: [["Аппараты для огнезащитных составов", "category.html?category=fire&subcategory=fireproof"]] },
-  { id: "accessories", name: "Комплектующие и расходники", description: "Шланги, сопла и оснащение для оборудования.", icon: "04", children: [["Шланги", "category.html?category=accessories&subcategory=hoses"], ["Сопла и пистолеты", "category.html?category=accessories&subcategory=nozzles"]] },
+  { id: "putty", name: "Шпаклёвочное оборудование", description: "Машины для подачи шпаклёвочных и строительных составов.", icon: "02", children: [["Все шпаклёвочные машины", "category.html?category=putty"]] },
+  { id: "fire", name: "Огнезащитное оборудование", description: "Аппараты для нанесения огнезащитных покрытий.", icon: "03", children: [["Все аппараты для огнезащиты", "category.html?category=fire"]] },
+  { id: "hydraulic", name: "Гидравлические распылители", description: "Аппараты с гидравлическим приводом для строительных и отделочных работ.", icon: "04", children: [["Все гидравлические распылители", "category.html?category=hydraulic"]] },
+  { id: "texture", name: "Текстурные распылители", description: "Техника для текстурных и штукатурных составов.", icon: "05", children: [["Все текстурные распылители", "category.html?category=texture"]] },
+  { id: "waterproof", name: "Гидроизоляция", description: "Аппараты для нанесения гидроизоляционных покрытий.", icon: "06", children: [["Все аппараты для гидроизоляции", "category.html?category=waterproof"]] },
+  { id: "marking", name: "Дорожная разметка", description: "Машины для нанесения дорожной разметки.", icon: "07", children: [["Все машины для разметки", "category.html?category=marking"]] },
+  { id: "accessories", name: "Комплектующие и расходники", description: "Шланги, сопла и оснащение для оборудования.", icon: "08", children: [["Шланги", "category.html?category=accessories&subcategory=hoses"], ["Сопла и пистолеты", "category.html?category=accessories&subcategory=nozzles"]] },
 ];
 
 const articles = [
@@ -54,8 +78,11 @@ const articles = [
 ];
 
 const money = new Intl.NumberFormat("ru-RU");
-const asset = (product, filename) => `assets/products/${product.id}/${filename}`;
+const asset = (product, filename) => filename.startsWith("manufacturer-materials/")
+  ? filename
+  : `assets/products/${product.id}/${filename}`;
 const productUrl = (product) => `product.html?id=${encodeURIComponent(product.id)}`;
+const quoteUrl = (product) => `contacts.html?product=${encodeURIComponent(product.id)}`;
 const getStored = (key, fallback) => {
   try {
     const value = JSON.parse(localStorage.getItem(key));
@@ -74,16 +101,18 @@ function productImage(product, index = 0) {
 
 function productCard(product) {
   const saved = favorites.includes(product.id);
+  const hasPrice = Number.isFinite(product.price) && product.price > 0;
   return `<article class="product-card">
     <a class="product-card-image" href="${productUrl(product)}"><img src="${productImage(product)}" alt="${product.images[0][1]}" loading="lazy"></a>
     <div class="product-card-info">
       <span class="badge">${product.badge}</span>
+      ${product.manufacturer ? `<span class="product-manufacturer">${product.manufacturer} · ${product.model}</span>` : ""}
       <h3><a href="${productUrl(product)}">${product.name}</a></h3>
       <p>${product.description}</p>
       <div class="mini-specs">${product.specs.slice(0, 4).map(([name, value]) => `<span>${name}<strong>${value}</strong></span>`).join("")}</div>
       <div class="product-card-bottom">
-        <span class="price">${money.format(product.price)} ₽${product.oldPrice ? `<del class="price-old">${money.format(product.oldPrice)} ₽</del>` : ""}</span>
-        <span class="actions-inline"><button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button><button class="button button-primary" type="button" data-add-cart="${product.id}" aria-label="Добавить ${product.shortName} в корзину">В корзину</button></span>
+        ${hasPrice ? `<span class="price">${money.format(product.price)} ₽${product.oldPrice ? `<del class="price-old">${money.format(product.oldPrice)} ₽</del>` : ""}</span>` : `<span class="price-request-label">Цена по запросу</span>`}
+        <span class="actions-inline"><button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button>${hasPrice ? `<button class="button button-primary" type="button" data-add-cart="${product.id}" aria-label="Добавить ${product.shortName} в корзину">В корзину</button>` : `<a class="button button-outline" href="${quoteUrl(product)}">Уточнить цену</a>`}</span>
       </div>
     </div>
   </article>`;
@@ -182,12 +211,12 @@ function renderHome() {
       <div class="hero-actions"><a class="button button-primary" href="catalog.html">Перейти в каталог <span>→</span></a><a class="button button-outline" href="rent.html">Аренда оборудования</a></div>
       <div class="hero-points"><span>Продажа и аренда</span><span>Подбор под задачу</span><span>Москва и доставка</span></div>
     </div>
-    <div class="hero-visual"><span class="hero-podium" aria-hidden="true"></span><img src="${asset(products[1], "putter-9528x-hero-transparent.png")}" alt="Окрасочный аппарат PUTTER 9528-X QuickReel"><div class="hero-stamp hero-chip hero-chip-model"><strong>PUTTER 9528-X</strong><span>Система QuickReel</span></div><div class="hero-stamp hero-chip hero-chip-flow"><strong>11 л/мин</strong><span>Подача материала</span></div><div class="hero-stamp hero-chip hero-chip-pressure"><strong>230 бар</strong><span>Рабочее давление</span></div><div class="hero-flow-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="hero-visual"><span class="hero-podium" aria-hidden="true"></span><img src="${asset(products[1], "putter-9528x-hero-transparent.png")}" alt="Окрасочный аппарат PUTTER 9528-X QuickReel"><div class="hero-stamp hero-chip hero-chip-model"><strong>PUTTER 9528-X</strong><span>Система QuickReel</span></div><div class="hero-stamp hero-chip hero-chip-flow"><strong>10,5 л/мин</strong><span>Максимальная подача</span></div><div class="hero-stamp hero-chip hero-chip-pressure"><strong>5 000 Вт</strong><span>Мощность</span></div><div class="hero-flow-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
   </div>${paintParticles()}</section>
   <section class="section section-soft comparison-wrap">${comparisonSlider({ id: "home", caption: "Ровная подача материала помогает получить аккуратное покрытие на объекте." })}</section>
   <section class="section"><div class="container"><div class="benefit-strip"><div class="benefit"><span class="benefit-icon">↗</span><div><strong>Подбор техники</strong><span>С учётом задачи и материала</span></div></div><div class="benefit"><span class="benefit-icon">▣</span><div><strong>Продажа и аренда</strong><span>Варианты под ваш срок и объём</span></div></div><div class="benefit"><span class="benefit-icon">⌁</span><div><strong>Комплектующие</strong><span>Оснащение для рабочего процесса</span></div></div><div class="benefit"><span class="benefit-icon">⌖</span><div><strong>Москва</strong><span>Самовывоз и доставка</span></div></div></div></div></section>
   <section class="section section-soft"><div class="container"><div class="section-heading"><div><p class="eyebrow">Каталог NORD</p><h2>Оборудование<br>под ваши задачи</h2></div><p>Выберите направление — или расскажите, что предстоит сделать, и мы поможем сориентироваться.</p></div><div class="category-grid">${categories.map((item) => `<a class="category-card" href="category.html?category=${item.id}"><span class="category-number">${item.icon} / НАПРАВЛЕНИЕ</span><div><h3>${item.name}</h3><p>${item.description}</p></div><span class="category-arrow" aria-hidden="true">↗</span></a>`).join("")}</div></div></section>
-  <section class="section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Выбор Nord</p><h2>Популярное оборудование</h2></div><a class="button button-outline" href="catalog.html">Весь каталог →</a></div><div class="product-grid">${products.map(productCard).join("")}</div></div></section>
+  <section class="section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Выбор Nord</p><h2>Популярное оборудование</h2></div><a class="button button-outline" href="catalog.html">Весь каталог →</a></div><div class="product-grid">${products.filter((product) => product.featured).map(productCard).join("")}</div></div></section>
   <section class="section"><div class="container"><div class="promo-banner"><div><p class="eyebrow">Новинка · QuickReel</p><h2>Шланг — под контролем.<br>Объект — в порядке.</h2><p>PUTTER 9528-X с системой для удобного сматывания шланга — для интенсивной работы с красками, шпаклёвками и огнезащитными материалами.</p></div><a class="button" href="${productUrl(products[1])}">Подробнее об аппарате <span>↗</span></a></div></div></section>
   <section class="section section-soft"><div class="container"><div class="section-heading"><div><p class="eyebrow">Почему NORD</p><h2>Сначала задача.<br>Потом оборудование.</h2></div><p>Хороший подбор начинается не с громких обещаний, а с понимания материала, объёма работ и условий объекта.</p></div><div class="steps-grid"><article class="step-card"><span class="step-num">01</span><h3>Разбираемся в задаче</h3><p>Учитываем тип работ, материал, масштаб объекта и важные условия на площадке.</p><svg class="step-flow-visual" viewBox="0 0 220 90" aria-hidden="true"><path class="flow-track" d="M12 70h49l22-36h57l20 22h48"/><circle cx="83" cy="34" r="6"/><circle cx="140" cy="34" r="4"/></svg></article><article class="step-card"><span class="step-num">02</span><h3>Сравниваем варианты</h3><p>Показываем характеристики и помогаем понять, чем модели отличаются для вашей работы.</p><svg class="step-flow-visual" viewBox="0 0 220 90" aria-hidden="true"><path class="flow-track" d="M12 70h43l18-45h39l20 45h75"/><path class="flow-secondary" d="M12 70h45l20-23h43l18 23h69"/></svg></article><article class="step-card"><span class="step-num">03</span><h3>Согласуем детали</h3><p>Уточняем наличие, комплектацию, срок аренды или условия покупки до оформления.</p><svg class="step-flow-visual" viewBox="0 0 220 90" aria-hidden="true"><path class="flow-track" d="M12 70h44l28-34h43l26 18h54"/><circle class="flow-pulse" cx="84" cy="36" r="5"/></svg></article></div></div></section>
   <section class="section"><div class="container split-panel"><div><p class="eyebrow">О компании</p><h2>Nord — техника<br>для дела.</h2><p class="lead">Мы работаем с оборудованием для малярных и отделочных работ: помогаем с выбором, предлагаем технику в продажу и аренду.</p><a class="button button-outline" href="about.html">О компании →</a></div><div class="about-facts"><div class="fact"><strong>Продажа</strong><span>Окрасочные аппараты и оснащение</span></div><div class="fact"><strong>Аренда</strong><span>Окраска, шпаклёвка, огнезащита</span></div><div class="fact"><strong>Подбор</strong><span>Под задачу и материал</span></div><div class="fact"><strong>Москва</strong><span>Точка выдачи оборудования</span></div></div></div></section>
@@ -199,40 +228,49 @@ function articleCard(item) {
   return `<article class="article-card"><p class="eyebrow">${item.tag}</p><h3>${item.title}</h3><p>${item.teaser}</p><a href="article.html?id=${item.id}">Читать материал →</a></article>`;
 }
 
+function catalogFilters(categoryId = "", params = new URLSearchParams(location.search)) {
+  const selectedMaterial = ({ painting: "paint", putty: "putty", fire: "fire", hydraulic: "hydraulic", texture: "texture", waterproof: "waterproof", marking: "marking" })[categoryId];
+  const manufacturers = [...new Set(products.map((product) => product.manufacturer).filter(Boolean))];
+  return `<aside class="filter-panel" aria-label="Фильтры каталога"><h3>Фильтры</h3>
+    <label class="filter-select-label" for="manufacturer-filter">Производитель</label>
+    <select class="form-control" id="manufacturer-filter"><option value="">Все производители</option>${manufacturers.map((name) => `<option value="${name}" ${params.get("manufacturer") === name ? "selected" : ""}>${name}</option>`).join("")}</select>
+    <fieldset class="filter-group"><legend>Тип привода</legend><label><input type="checkbox" name="drive" value="electric"> Электрический</label></fieldset>
+    <fieldset class="filter-group"><legend>Подача</legend><label><input type="radio" name="flow" value="compact" ${params.get("flow") === "compact" ? "checked" : ""}> До 6 л/мин</label><label><input type="radio" name="flow" value="high" ${params.get("flow") === "high" ? "checked" : ""}> От 10 л/мин</label></fieldset>
+    <fieldset class="filter-group"><legend>Система</legend><label><input type="checkbox" name="reel" value="quickreel" ${params.get("feature") === "quickreel" ? "checked" : ""}> QuickReel</label></fieldset>
+    <fieldset class="filter-group"><legend>Назначение</legend>
+      ${[["paint", "Окраска"], ["putty", "Шпаклёвка"], ["fire", "Огнезащита"], ["hydraulic", "Гидравлические распылители"], ["texture", "Текстурные составы"], ["waterproof", "Гидроизоляция"], ["marking", "Разметка"]].map(([value, label]) => `<label><input type="checkbox" name="material" value="${value}" ${value === selectedMaterial ? "checked" : ""}> ${label}</label>`).join("")}
+    </fieldset>
+    <button class="button button-outline button-full" type="button" data-clear-filters>Сбросить фильтры</button>
+  </aside>`;
+}
+
+function catalogListing({ categoryId = "" } = {}) {
+  const params = new URLSearchParams(location.search);
+  const available = products.filter((product) => !categoryId || product.category === categoryId);
+  return `<div class="catalog-layout">${catalogFilters(categoryId, params)}
+    <div><div class="filter-row"><label class="visually-hidden" for="product-search">Поиск товара</label><input id="product-search" type="search" placeholder="Модель, производитель или назначение"><span class="result-count" data-result-count>Найдено: ${available.length}</span></div>
+    <div class="catalog-products" data-filter-products>${available.map(productCard).join("")}</div></div>
+  </div>`;
+}
+
 function renderCatalog() {
-  return `${pageHero("Каталог оборудования", "Окрасочная техника, решения для шпаклёвки и огнезащиты, комплектующие и расходные материалы.", "Каталог", "spray")}
-  <section class="section"><div class="container"><div class="category-tiles">${categories.map((item) => `<div class="category-tile"><a href="category.html?category=${item.id}"><strong>${item.name}</strong><span>${item.description}</span></a><div class="category-subcats">${item.children.map(([name, href]) => `<a href="${href}">${name} ↗</a>`).join("")}</div></div>`).join("")}</div><div class="section-heading"><div><p class="eyebrow">Окрасочное оборудование</p><h2>Аппараты в каталоге</h2></div><p>Смотрите характеристики, фотографии и варианты комплектации в карточке каждой модели.</p></div><div class="product-grid">${products.map(productCard).join("")}</div><div style="margin-top:36px">${contactBand()}</div></div></section>`;
+  const visibleCategories = categories.filter((category) => products.some((product) => product.category === category.id));
+  return `${pageHero("Каталог оборудования", "Профессиональная техника для окраски, шпаклёвки, огнезащиты, гидроизоляции и других отделочных задач.", "Каталог", "spray")}
+  <section class="section"><div class="container"><div class="category-tiles">${visibleCategories.map((item) => `<div class="category-tile"><a href="category.html?category=${item.id}"><strong>${item.name}</strong><span>${item.description}</span></a><div class="category-subcats">${item.children.map(([name, href]) => `<a href="${href}">${name} ↗</a>`).join("")}</div></div>`).join("")}</div><div class="section-heading"><div><p class="eyebrow">Модели и характеристики</p><h2>Оборудование в каталоге</h2></div><p>Цена и наличие моделей уточняются у менеджера. Технические данные приведены по материалам производителей.</p></div>${catalogListing()}<div style="margin-top:36px">${contactBand()}</div></div></section>`;
 }
 
 function renderCategory() {
   const params = new URLSearchParams(location.search);
   const selectedCategory = categories.find((item) => item.id === params.get("category")) || categories[0];
-  const flowPreset = params.get("flow");
-  const reelPreset = params.get("feature") === "quickreel";
   const selectedSubcategory = selectedCategory.children.find(([, href]) => {
     const childParams = new URLSearchParams(href.split("?")[1]);
     return ["subcategory", "flow", "feature"].some((key) => params.has(key) && params.get(key) === childParams.get(key));
   })?.[0];
-  const available = selectedCategory.id === "painting"
-    ? products.filter((item) => item.category === "painting")
-    : selectedCategory.id === "putty" || selectedCategory.id === "fire"
-      ? products.filter((item) => item.id === "putter-9528x")
-      : [];
   const sectionTheme = selectedCategory.id === "painting" ? "spray" : selectedCategory.id === "putty" ? "putty" : selectedCategory.id === "fire" ? "fire" : "blueprint";
-  const materialPreset = selectedCategory.id === "fire" ? "fire" : selectedCategory.id === "putty" ? "putty" : "";
+  const count = products.filter((product) => product.category === selectedCategory.id).length;
   return `${pageHero(selectedSubcategory || selectedCategory.name, selectedCategory.description, selectedCategory.name, sectionTheme)}
   <section class="section category-section category-section--${sectionTheme}">${pageTheme(sectionTheme)}<div class="container">
-    ${!available.length ? `<div class="empty-state"><h2>Подбор оборудования</h2><p>Расскажите, какой материал и объём работ планируются. Поможем подобрать подходящее решение и уточним наличие.</p><a class="button button-primary" href="contacts.html">Запросить подбор</a></div>` : `
-      <div class="catalog-layout">
-        <aside class="filter-panel" aria-label="Фильтры каталога"><h3>Фильтры</h3>
-          <fieldset class="filter-group"><legend>Тип привода</legend><label><input type="checkbox" name="drive" value="electric"> Электрический</label></fieldset>
-          <fieldset class="filter-group"><legend>Производительность</legend><label><input type="radio" name="flow" value="compact" ${flowPreset === "compact" ? "checked" : ""}> До 6 л/мин</label><label><input type="radio" name="flow" value="high" ${flowPreset === "high" ? "checked" : ""}> От 10 л/мин</label></fieldset>
-          <fieldset class="filter-group"><legend>Система</legend><label><input type="checkbox" name="reel" value="quickreel" ${reelPreset ? "checked" : ""}> QuickReel</label></fieldset>
-          <fieldset class="filter-group"><legend>Материал</legend><label><input type="checkbox" name="material" value="paint"> Краска</label><label><input type="checkbox" name="material" value="putty" ${materialPreset === "putty" ? "checked" : ""}> Шпаклёвка</label><label><input type="checkbox" name="material" value="fire" ${materialPreset === "fire" ? "checked" : ""}> Огнезащита</label></fieldset>
-          <button class="button button-outline button-full" type="button" data-clear-filters>Сбросить фильтры</button>
-        </aside>
-        <div><div class="filter-row"><label class="visually-hidden" for="product-search">Поиск товара</label><input id="product-search" type="search" placeholder="Модель или название"><span class="result-count" data-result-count></span></div><div class="catalog-products" data-filter-products>${available.map(productCard).join("")}</div>${selectedCategory.id !== "painting" ? `<p class="form-note">Подходит для работ с ${selectedCategory.id === "fire" ? "огнезащитными материалами" : "шпаклёвочными составами"} согласно описанию аппарата.</p>` : ""}</div>
-      </div>`}
+    ${count ? catalogListing({ categoryId: selectedCategory.id }) : `<div class="empty-state"><h2>Раздел обновляется</h2><p>Сейчас модели в этом разделе не опубликованы. Свяжитесь с нами — подскажем по наличию и совместимости.</p><a class="button button-primary" href="contacts.html">Запросить подбор</a></div>`}
     <div style="margin-top:36px">${contactBand()}</div>
   </div></section>`;
 }
@@ -240,15 +278,16 @@ function renderCategory() {
 function renderProduct() {
   const product = products.find((item) => item.id === new URLSearchParams(location.search).get("id")) || products[0];
   const saved = favorites.includes(product.id);
+  const hasPrice = Number.isFinite(product.price) && product.price > 0;
   return `${pageHero(product.name, product.description, product.shortName, "nozzle")}
   <section class="section"><div class="container"><div class="product-layout">
     <div><div class="gallery-main">${pageTheme("nozzle")}<img data-gallery-main src="${productImage(product)}" alt="${product.images[0][1]}"></div><div class="gallery-thumbs" role="group" aria-label="Фотографии ${product.shortName}">${product.images.map(([file, alt], index) => `<button class="gallery-thumb" type="button" data-gallery-src="${asset(product, file)}" data-gallery-alt="${alt}" aria-label="Фото ${index + 1}: ${alt}" aria-pressed="${index === 0}"><img src="${asset(product, file)}" alt="" loading="lazy"></button>`).join("")}</div></div>
-    <div class="product-detail-copy"><span class="badge">${product.badge}</span><h1>${product.name}</h1><p>${product.description}</p><div class="detail-price">${money.format(product.price)} ₽${product.oldPrice ? `<del>${money.format(product.oldPrice)} ₽</del>` : ""}</div><div class="detail-actions"><button class="button button-primary" type="button" data-add-cart="${product.id}">Добавить в корзину</button><button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button></div><table class="spec-table"><tbody>${product.specs.map(([name, value]) => `<tr><th scope="row">${name}</th><td>${value}</td></tr>`).join("")}</tbody></table>    <div class="detail-section"><h3>Для каких материалов</h3><p>${product.materials}</p></div>${product.id === "putter-9528x" ? '<div class="detail-section"><h3>Гарантия</h3><p>2 года гарантии от магазина.</p></div>' : ""}<div class="detail-section"><h3>Комплектация</h3><p>Состав комплекта зависит от выбранной комплектации. Уточните его при заказе оборудования.</p></div><div class="detail-section product-result"><h3>Результат работы аппаратом ${product.shortName}</h3>${comparisonSlider({ id: product.id, compact: true })}</div></div>
-  </div><section class="section"><div class="section-heading"><div><p class="eyebrow">Другие модели</p><h2>Похожие товары</h2></div></div><div class="product-grid">${products.filter((item) => item.id !== product.id).map(productCard).join("")}</div></section></div></section>`;
+    <div class="product-detail-copy"><span class="badge">${product.badge}</span><h1>${product.name}</h1><p>${product.description}</p><div class="detail-price">${hasPrice ? `${money.format(product.price)} ₽${product.oldPrice ? `<del>${money.format(product.oldPrice)} ₽</del>` : ""}` : "Цена и наличие по запросу"}</div><div class="detail-actions">${hasPrice ? `<button class="button button-primary" type="button" data-add-cart="${product.id}">Добавить в корзину</button>` : `<a class="button button-primary" href="${quoteUrl(product)}">Уточнить цену и наличие</a>`}<button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button></div><table class="spec-table"><tbody>${product.specs.map(([name, value]) => `<tr><th scope="row">${name}</th><td>${value}</td></tr>`).join("")}</tbody></table><div class="detail-section"><h3>Для каких материалов</h3><p>${product.materials}</p></div>${product.id === "putter-9528x" ? '<div class="detail-section"><h3>Гарантия</h3><p>2 года гарантии от магазина.</p></div>' : ""}${product.sourceUrl ? `<div class="detail-section product-source"><a href="${product.sourceUrl}" target="_blank" rel="noreferrer">Страница модели у производителя ↗</a></div>` : ""}<div class="detail-section"><h3>Комплектация</h3><p>Состав комплекта зависит от выбранной комплектации. Уточните его при заказе оборудования.</p></div></div>
+  </div><section class="section"><div class="section-heading"><div><p class="eyebrow">Другие модели</p><h2>Похожие товары</h2></div></div><div class="product-grid">${products.filter((item) => item.id !== product.id && item.category === product.category).slice(0, 4).map(productCard).join("")}</div></section></div></section>`;
 }
 
 function renderCart() {
-  const entries = Object.entries(cart).map(([id, quantity]) => ({ product: products.find((item) => item.id === id), quantity })).filter((item) => item.product);
+  const entries = Object.entries(cart).map(([id, quantity]) => ({ product: products.find((item) => item.id === id), quantity })).filter((item) => item.product && Number.isFinite(item.product.price) && item.product.price > 0);
   if (!entries.length) return `${pageHero("Корзина", "Товары, которые вы выбрали.", "Корзина")}<section class="section"><div class="container"><div class="empty-state"><h2>В корзине пока пусто</h2><p>Выберите подходящее оборудование в каталоге.</p><a class="button button-primary" href="catalog.html">Перейти в каталог</a></div></div></section>`;
   const total = entries.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   return `${pageHero("Корзина", "Проверьте выбранное оборудование и количество.", "Корзина")}<section class="section"><div class="container cart-layout"><div class="cart-list">${entries.map(({ product, quantity }) => `<article class="cart-row"><a href="${productUrl(product)}"><img src="${productImage(product)}" alt="${product.images[0][1]}"></a><div><h3><a href="${productUrl(product)}">${product.name}</a></h3><p>${money.format(product.price)} ₽ за единицу</p></div><div class="cart-row-actions"><div class="quantity"><button type="button" data-quantity="${product.id}" data-delta="-1" aria-label="Уменьшить количество">−</button><strong>${quantity}</strong><button type="button" data-quantity="${product.id}" data-delta="1" aria-label="Увеличить количество">+</button></div><button class="remove-button" type="button" data-remove-cart="${product.id}">Удалить</button></div></article>`).join("")}</div><aside class="summary-card"><h3>Итого</h3><div class="summary-line"><span>Товары (${entries.reduce((sum, item) => sum + item.quantity, 0)})</span><strong>${money.format(total)} ₽</strong></div><div class="summary-total"><span>Сумма</span><span>${money.format(total)} ₽</span></div><a class="button button-primary button-full" href="contacts.html?order=1">Оформить заказ</a><p class="form-note">Условия заказа и наличие согласуются при обращении.</p></aside></div></section>`;
@@ -356,6 +395,13 @@ function renderPage() {
       .filter(Boolean);
     const messageField = document.querySelector("#contact-message");
     if (messageField && lines.length) messageField.value = `Интересует заказ:\n${lines.join("\n")}`;
+  } else if (page === "contacts") {
+    const requestedProduct = products.find((product) => product.id === new URLSearchParams(location.search).get("product"));
+    const messageField = document.querySelector("#contact-message");
+    if (requestedProduct && messageField) {
+      const modelName = [requestedProduct.manufacturer, requestedProduct.model || requestedProduct.shortName].filter(Boolean).join(" ");
+      messageField.value = `Интересует модель ${modelName}. Прошу уточнить цену, наличие и комплектацию.`;
+    }
   }
   decorateSensors(main);
   animateHeadlines(main);
@@ -458,6 +504,11 @@ document.addEventListener("click", (event) => {
   }
   if (target.matches("[data-add-cart]")) {
     const id = target.dataset.addCart;
+    const product = products.find((item) => item.id === id);
+    if (!product || !Number.isFinite(product.price) || product.price <= 0) {
+      showToast("Для этой модели уточните цену и наличие");
+      return;
+    }
     cart[id] = (cart[id] || 0) + 1;
     setStored("nord-v2-cart", cart);
     updateCounts();
@@ -501,6 +552,8 @@ document.addEventListener("click", (event) => {
   }
   if (target.matches("[data-clear-filters]")) {
     document.querySelectorAll(".filter-panel input").forEach((input) => { input.checked = false; });
+    const manufacturer = document.querySelector("#manufacturer-filter");
+    if (manufacturer) manufacturer.value = "";
     const search = document.querySelector("#product-search");
     if (search) search.value = "";
     filterProducts();
@@ -525,28 +578,23 @@ document.addEventListener("click", (event) => {
 function filterProducts() {
   const container = document.querySelector("[data-filter-products]");
   if (!container) return;
-  const search = document.querySelector("#product-search").value.trim().toLocaleLowerCase("ru");
-  const drive = document.querySelector('input[name="drive"]').checked;
+  const search = (document.querySelector("#product-search")?.value || "").trim().toLocaleLowerCase("ru");
+  const drive = document.querySelector('input[name="drive"]')?.checked || false;
+  const manufacturer = document.querySelector("#manufacturer-filter")?.value || "";
   const flowMode = document.querySelector('input[name="flow"]:checked')?.value;
-  const reel = document.querySelector('input[name="reel"]').checked;
+  const reel = document.querySelector('input[name="reel"]')?.checked || false;
   const materials = [...document.querySelectorAll('input[name="material"]:checked')].map((input) => input.value);
-  const categoryId = new URLSearchParams(location.search).get("category") || "painting";
-  const categoryProducts = categoryId === "painting"
-    ? products.filter((product) => product.category === "painting")
-    : categoryId === "putty" || categoryId === "fire"
-      ? products.filter((product) => product.id === "putter-9528x")
-      : [];
+  const categoryId = new URLSearchParams(location.search).get("category");
+  const categoryProducts = products.filter((product) => !categoryId || product.category === categoryId);
+  const materialCategories = { paint: "painting", putty: "putty", fire: "fire", hydraulic: "hydraulic", texture: "texture", waterproof: "waterproof", marking: "marking" };
   const matches = categoryProducts.filter((product) => {
-    const flow = Number(product.specs[0][1].match(/\d+/)?.[0] || 0);
-    return (!search || `${product.name} ${product.description}`.toLocaleLowerCase("ru").includes(search))
-      && (!drive || product.specs.some(([name, value]) => name === "Тип" && value.includes("Электрический")))
-      && (!flowMode || (flowMode === "high" ? flow >= 10 : flow <= 6))
-      && (!reel || product.id === "putter-9528x")
-      && (!materials.length || materials.some((material) => material === "paint"
-        ? /краск|лакокрас/i.test(product.materials)
-        : material === "putty"
-          ? /шпакл/i.test(product.materials)
-          : /огнезащит/i.test(product.materials)));
+    const searchable = `${product.name} ${product.model || ""} ${product.manufacturer || ""} ${product.description} ${product.category}`.toLocaleLowerCase("ru");
+    return (!search || searchable.includes(search))
+      && (!manufacturer || product.manufacturer === manufacturer)
+      && (!drive || product.drive === "electric")
+      && (!flowMode || (typeof product.flowLpm === "number" && (flowMode === "high" ? product.flowLpm >= 10 : product.flowLpm <= 6)))
+      && (!reel || product.features?.includes("QuickReel"))
+      && (!materials.length || materials.some((material) => product.category === materialCategories[material]));
   });
   container.innerHTML = matches.length ? matches.map(productCard).join("") : `<div class="empty-state"><h3>По вашему запросу ничего не найдено</h3><p>Измените фильтры или свяжитесь с нами для подбора.</p></div>`;
   decorateSensors(container);
@@ -556,7 +604,7 @@ function filterProducts() {
 }
 
 document.addEventListener("change", (event) => {
-  if (event.target.matches('.filter-panel input')) filterProducts();
+  if (event.target.matches(".filter-panel input, #manufacturer-filter")) filterProducts();
 });
 document.addEventListener("input", (event) => {
   if (event.target.matches("#product-search")) filterProducts();
@@ -583,7 +631,7 @@ renderHeader();
 renderFooter();
 renderPage();
 updateCounts();
-if (document.body.dataset.page === "category") filterProducts();
+if (["catalog", "category"].includes(document.body.dataset.page)) filterProducts();
 
 const siteHeader = document.querySelector(".site-header");
 let scrollFrame = 0;
