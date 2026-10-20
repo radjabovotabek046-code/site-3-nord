@@ -13,7 +13,7 @@ const featuredProducts = [
     flowLpm: 6,
     specs: [["Производительность", "6 л/мин"], ["Мощность", "3 500 Вт"], ["Напряжение", "220 В"], ["Максимальное давление", "230 бар"], ["Максимальное сопло", "0.043″"], ["Тип", "Электрический, безвоздушный"]],
     images: [
-      ["gtb-1095-main.png", "Аппарат GTB-1095 и основные параметры"],
+      ["manufacturer-materials/GUTUBAO/1174453/image-01.jpg", "GUTUBAO GTB-1095 — фото аппарата"],
       ["gtb-1095-side.png", "GTB-1095, вид сбоку"],
       ["gtb-1095-kit.png", "Комплектация GTB-1095"],
       ["gtb-1095-detail.png", "Деталь аппарата GTB-1095"],
@@ -67,6 +67,78 @@ const categories = [
   { id: "accessories", name: "Комплектующие и расходники", description: "Шланги, сопла и оснащение для оборудования.", icon: "08", children: [["Шланги", "category.html?category=accessories&subcategory=hoses"], ["Сопла и пистолеты", "category.html?category=accessories&subcategory=nozzles"]] },
 ];
 
+const catalogMetrics = {
+  flow: { label: "Производительность", unit: "л/мин", step: 0.5, min: 0 },
+  power: { label: "Мощность", unit: "Вт", step: 500, min: 0 },
+  pressure: { label: "Макс. давление", unit: "бар", step: 10, min: 0 },
+  price: { label: "Цена", unit: "₽", step: 5000, min: 0 },
+};
+const catalogNumber = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 });
+
+function modelMetricValues(product, metric) {
+  if (metric === "price") return Number.isFinite(product.price) && product.price > 0 ? [product.price] : [];
+  if (metric === "flow" && Number.isFinite(product.flowLpm)) return [product.flowLpm];
+  const spec = product.specs.find(([name]) => {
+    if (metric === "flow") return /подач|производительност/i.test(name);
+    if (metric === "power") return /мощност/i.test(name);
+    return /давлен/i.test(name);
+  });
+  if (!spec) return [];
+  const value = String(spec[1]);
+  const numberPattern = /\d+(?:[\s\u00a0]\d{3})*(?:[.,]\d+)?/g;
+  if (metric === "flow") {
+    if (!/л\s*\/\s*мин/i.test(value)) return [];
+    return [...value.matchAll(numberPattern)].map(([number]) => Number(number.replace(/[\s\u00a0]/g, "").replace(",", "."))).filter(Number.isFinite);
+  }
+  if (metric === "power") {
+    const normalized = value.toLocaleLowerCase("ru");
+    const wattsAt = normalized.lastIndexOf("вт");
+    if (wattsAt < 0) return [];
+    const horsepowerAt = normalized.lastIndexOf("л.с.");
+    const wattValues = value.slice(horsepowerAt < 0 ? 0 : horsepowerAt + 4, wattsAt);
+    return [...wattValues.matchAll(numberPattern)].map(([number]) => Number(number.replace(/[\s\u00a0]/g, "").replace(",", "."))).filter(Number.isFinite);
+  }
+  const pressureAt = value.toLocaleLowerCase("ru").search(/бар|мпа/);
+  if (pressureAt < 0) return [];
+  const pressureValues = [...value.slice(0, pressureAt).matchAll(numberPattern)]
+    .map(([number]) => Number(number.replace(/[\s\u00a0]/g, "").replace(",", ".")))
+    .filter(Number.isFinite);
+  return /мпа/i.test(value.slice(pressureAt)) ? pressureValues.map((number) => number * 10) : pressureValues;
+}
+
+function formatMetric(value, unit) {
+  return `${catalogNumber.format(value)} ${unit}`;
+}
+
+function modelCountLabel(count) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const noun = lastTwo >= 11 && lastTwo <= 14 ? "моделей" : last === 1 ? "модель" : last >= 2 && last <= 4 ? "модели" : "моделей";
+  return `${count} ${noun}`;
+}
+
+function rangeFilterMarkup(metric, available, params) {
+  const config = catalogMetrics[metric];
+  let values = available.flatMap((product) => modelMetricValues(product, metric));
+  if (!values.length) return "";
+  const domainMin = config.min;
+  const domainMax = Math.max(config.step, Math.ceil(Math.max(...values) / config.step) * config.step);
+  let initialMin = domainMin;
+  let initialMax = domainMax;
+  if (metric === "flow" && params.get("flow") === "compact") initialMax = Math.min(6, domainMax);
+  if (metric === "flow" && params.get("flow") === "high") initialMin = Math.min(10, domainMax);
+  const inputMinId = `filter-${metric}-min`;
+  const inputMaxId = `filter-${metric}-max`;
+  return `<fieldset class="range-filter" data-range-filter="${metric}" data-domain-min="${domainMin}" data-domain-max="${domainMax}">
+    <legend>${config.label}, ${config.unit}</legend>
+    <div class="range-values"><label for="${inputMinId}">От <output data-range-min-label>${formatMetric(initialMin, config.unit)}</output></label><label for="${inputMaxId}">До <output data-range-max-label>${formatMetric(initialMax, config.unit)}</output></label></div>
+    <div class="range-slider">
+      <input id="${inputMinId}" type="range" min="${domainMin}" max="${domainMax}" step="${config.step}" value="${initialMin}" data-range-min-input aria-label="${config.label}: минимальное значение">
+      <input id="${inputMaxId}" type="range" min="${domainMin}" max="${domainMax}" step="${config.step}" value="${initialMax}" data-range-max-input aria-label="${config.label}: максимальное значение">
+    </div>
+  </fieldset>`;
+}
+
 const articles = [
   { id: "choose-sprayer", tag: "ПОДБОР", title: "Как подобрать окрасочный аппарат под объект", teaser: "С чего начать выбор: материал, объём работ, длина шланга и параметры аппарата." },
   { id: "quickreel", tag: "ОБОРУДОВАНИЕ", title: "QuickReel: зачем аппарату система для шланга", teaser: "Как устроена система сматывания и в каких рабочих ситуациях она удобна." },
@@ -96,13 +168,13 @@ function productImage(product, index = 0) {
   return asset(product, product.images[index][0]);
 }
 
-function productCard(product) {
+function productCard(product, { featured = false } = {}) {
   const saved = favorites.includes(product.id);
   const hasPrice = Number.isFinite(product.price) && product.price > 0;
-  return `<article class="product-card">
+  return `<article class="product-card${featured ? " product-card--focus" : ""}">
     <a class="product-card-image" href="${productUrl(product)}"><img src="${productImage(product)}" alt="${product.images[0][1]}" loading="lazy"></a>
     <div class="product-card-info">
-      <span class="badge">${product.badge}</span>
+      <span class="badge">${featured ? "Фокус раздела" : product.badge}</span>
       ${product.manufacturer ? `<span class="product-manufacturer">${product.manufacturer} · ${product.model}</span>` : ""}
       <h3><a href="${productUrl(product)}">${product.name}</a></h3>
       <p>${product.description}</p>
@@ -135,7 +207,7 @@ function renderFooter() {
   document.querySelector("#site-footer").innerHTML = `<footer class="site-footer"><span class="footer-watermark" aria-hidden="true">NORD</span><div class="container">
     <div class="footer-grid">
       <div class="footer-brand"><a class="brand" href="index.html" aria-label="NORD — главная"><img class="brand-logo" src="assets/products/logo.png" alt="NORD — оборудование для малярных работ"></a><p class="footer-description">Оборудование для малярных и отделочных работ. Продажа и аренда.</p></div>
-      <div><div class="footer-title">Каталог</div><div class="footer-links"><a href="catalog.html">Все оборудование</a><a href="category.html?category=painting">Окрасочные аппараты</a><a href="category.html?category=putty">Шпаклёвочные станции</a><a href="category.html?category=accessories">Комплектующие</a></div></div>
+      <div><div class="footer-title">Каталог</div><div class="footer-links"><a href="catalog.html">Все оборудование</a><a href="category.html?category=painting">Окрасочные аппараты</a><a href="category.html?category=putty">Шпаклёвочные аппараты</a><a href="category.html?category=accessories">Комплектующие</a></div></div>
       <div><div class="footer-title">Покупателям</div><div class="footer-links"><a href="rent.html">Аренда</a><a href="delivery.html">Доставка</a><a href="warranty.html">Гарантии и сервис</a><a href="account.html">Личный кабинет</a></div></div>
       <div><div class="footer-title">Nord</div><div class="footer-links"><a href="about.html">О компании</a><a href="contacts.html">Контакты</a><a href="blog.html">Статьи и новости</a><a href="favorites.html">Избранное</a></div></div>
     </div>
@@ -212,12 +284,19 @@ function articleCard(item) {
 
 function catalogFilters(categoryId = "", params = new URLSearchParams(location.search)) {
   const selectedMaterial = ({ painting: "paint", putty: "putty", fire: "fire", hydraulic: "hydraulic", texture: "texture", waterproof: "waterproof", marking: "marking" })[categoryId];
-  const manufacturers = [...new Set(products.map((product) => product.manufacturer).filter(Boolean))];
+  const available = products.filter((product) => !categoryId || product.category === categoryId);
+  const manufacturers = [...new Set(available.map((product) => product.manufacturer).filter(Boolean))];
+  const electricCount = available.filter((product) => product.drive === "electric" || product.drive === "multi").length;
+  const pneumaticCount = available.filter((product) => product.drive === "pneumatic").length;
   return `<aside class="filter-panel" aria-label="Фильтры каталога"><h3>Фильтры</h3>
     <label class="filter-select-label" for="manufacturer-filter">Производитель</label>
     <select class="form-control" id="manufacturer-filter"><option value="">Все производители</option>${manufacturers.map((name) => `<option value="${name}" ${params.get("manufacturer") === name ? "selected" : ""}>${name}</option>`).join("")}</select>
-    <fieldset class="filter-group"><legend>Тип привода</legend><label><input type="checkbox" name="drive" value="electric"> Электрический</label></fieldset>
-    <fieldset class="filter-group"><legend>Подача</legend><label><input type="radio" name="flow" value="compact" ${params.get("flow") === "compact" ? "checked" : ""}> До 6 л/мин</label><label><input type="radio" name="flow" value="high" ${params.get("flow") === "high" ? "checked" : ""}> От 10 л/мин</label></fieldset>
+    <fieldset class="filter-group"><legend>Тип привода</legend>
+      <label><input type="checkbox" name="drive" value="electric"> Электрический <span class="filter-option-count">${electricCount}</span></label>
+      <label class="${pneumaticCount ? "" : "is-unavailable"}"><input type="checkbox" name="drive" value="pneumatic" ${pneumaticCount ? "" : "disabled"}> Пневматический <span class="filter-option-count">${pneumaticCount}</span></label>
+    </fieldset>
+    ${["flow", "power", "pressure", "price"].map((metric) => rangeFilterMarkup(metric, available, params)).join("")}
+    <p class="filter-note">Учитываются только опубликованные значения параметров.</p>
     <fieldset class="filter-group"><legend>Система</legend><label><input type="checkbox" name="reel" value="quickreel" ${params.get("feature") === "quickreel" ? "checked" : ""}> QuickReel</label></fieldset>
     <fieldset class="filter-group"><legend>Назначение</legend>
       ${[["paint", "Окраска"], ["putty", "Шпаклёвка"], ["fire", "Огнезащита"], ["hydraulic", "Гидравлические распылители"], ["texture", "Текстурные составы"], ["waterproof", "Гидроизоляция"], ["marking", "Разметка"]].map(([value, label]) => `<label><input type="checkbox" name="material" value="${value}" ${value === selectedMaterial ? "checked" : ""}> ${label}</label>`).join("")}
@@ -230,9 +309,23 @@ function catalogListing({ categoryId = "" } = {}) {
   const params = new URLSearchParams(location.search);
   const available = products.filter((product) => !categoryId || product.category === categoryId);
   return `<div class="catalog-layout">${catalogFilters(categoryId, params)}
-    <div><div class="filter-row"><label class="visually-hidden" for="product-search">Поиск товара</label><input id="product-search" type="search" placeholder="Модель, производитель или назначение"><span class="result-count" data-result-count>Найдено: ${available.length}</span></div>
-    <div class="catalog-products" data-filter-products>${available.map(productCard).join("")}</div></div>
+    <div class="catalog-results"><div class="filter-row"><label class="visually-hidden" for="product-search">Поиск товара</label><input id="product-search" type="search" placeholder="Модель, производитель или назначение"><span class="result-count" data-result-count role="status" aria-live="polite">Найдено: ${modelCountLabel(available.length)}</span></div>
+    <div class="catalog-products" data-filter-products>${catalogGroupsMarkup(available)}</div></div>
   </div>`;
+}
+
+function catalogGroupsMarkup(items) {
+  const groups = categories
+    .map((category) => ({ category, products: items.filter((product) => product.category === category.id) }))
+    .filter((group) => group.products.length);
+  if (!groups.length) return `<div class="empty-state"><h3>По вашему запросу ничего не найдено</h3><p>Измените фильтры или свяжитесь с нами для подбора.</p></div>`;
+  return groups.map(({ category, products: groupProducts }, index) => `<section class="catalog-group" aria-labelledby="catalog-group-${category.id}">
+    <header class="catalog-group-heading">
+      <div><p class="eyebrow">Направление ${String(index + 1).padStart(2, "0")}</p><h3 id="catalog-group-${category.id}">${category.name}</h3><p>${category.description}</p></div>
+      <span class="catalog-group-count">${modelCountLabel(groupProducts.length)}</span>
+    </header>
+    <div class="catalog-group-products">${groupProducts.map((product, productIndex) => productCard(product, { featured: productIndex === 0 })).join("")}</div>
+  </section>`).join("");
 }
 
 function renderCatalog() {
@@ -350,6 +443,7 @@ function renderPage() {
   };
   document.querySelector("#main").innerHTML = (renderers[page] || renderHome)();
   const main = document.querySelector("#main");
+  main.querySelectorAll("[data-range-filter]").forEach(updateRangeDisplay);
   const existingCta = main.querySelector(".contact-band");
   let cta = existingCta;
   if (existingCta) {
@@ -534,6 +628,13 @@ document.addEventListener("click", (event) => {
   }
   if (target.matches("[data-clear-filters]")) {
     document.querySelectorAll(".filter-panel input").forEach((input) => { input.checked = false; });
+    document.querySelectorAll("[data-range-filter]").forEach((group) => {
+      const minInput = group.querySelector("[data-range-min-input]");
+      const maxInput = group.querySelector("[data-range-max-input]");
+      minInput.value = minInput.min;
+      maxInput.value = maxInput.max;
+      updateRangeDisplay(group);
+    });
     const manufacturer = document.querySelector("#manufacturer-filter");
     if (manufacturer) manufacturer.value = "";
     const search = document.querySelector("#product-search");
@@ -561,10 +662,16 @@ function filterProducts() {
   const container = document.querySelector("[data-filter-products]");
   if (!container) return;
   const search = (document.querySelector("#product-search")?.value || "").trim().toLocaleLowerCase("ru");
-  const drive = document.querySelector('input[name="drive"]')?.checked || false;
+  const drives = [...document.querySelectorAll('input[name="drive"]:checked')].map((input) => input.value);
   const manufacturer = document.querySelector("#manufacturer-filter")?.value || "";
-  const flowMode = document.querySelector('input[name="flow"]:checked')?.value;
   const reel = document.querySelector('input[name="reel"]')?.checked || false;
+  const ranges = [...document.querySelectorAll("[data-range-filter]")].map((group) => ({
+    metric: group.dataset.rangeFilter,
+    domainMin: Number(group.dataset.domainMin),
+    domainMax: Number(group.dataset.domainMax),
+    min: Number(group.querySelector("[data-range-min-input]").value),
+    max: Number(group.querySelector("[data-range-max-input]").value),
+  }));
   const materials = [...document.querySelectorAll('input[name="material"]:checked')].map((input) => input.value);
   const categoryId = new URLSearchParams(location.search).get("category");
   const categoryProducts = products.filter((product) => !categoryId || product.category === categoryId);
@@ -573,16 +680,39 @@ function filterProducts() {
     const searchable = `${product.name} ${product.model || ""} ${product.manufacturer || ""} ${product.description} ${product.category}`.toLocaleLowerCase("ru");
     return (!search || searchable.includes(search))
       && (!manufacturer || product.manufacturer === manufacturer)
-      && (!drive || product.drive === "electric")
-      && (!flowMode || (typeof product.flowLpm === "number" && (flowMode === "high" ? product.flowLpm >= 10 : product.flowLpm <= 6)))
+      && (!drives.length || drives.some((drive) => drive === "electric"
+        ? product.drive === "electric" || product.drive === "multi"
+        : product.drive === "pneumatic"))
+      && ranges.every(({ metric, domainMin, domainMax, min, max }) => {
+        if (min <= domainMin && max >= domainMax) return true;
+        const values = modelMetricValues(product, metric);
+        return values.some((value) => value >= min && value <= max);
+      })
       && (!reel || product.features?.includes("QuickReel"))
       && (!materials.length || materials.some((material) => product.category === materialCategories[material]));
   });
-  container.innerHTML = matches.length ? matches.map(productCard).join("") : `<div class="empty-state"><h3>По вашему запросу ничего не найдено</h3><p>Измените фильтры или свяжитесь с нами для подбора.</p></div>`;
+  container.innerHTML = catalogGroupsMarkup(matches);
   decorateSensors(container);
   revealTargets(container);
   const count = document.querySelector("[data-result-count]");
-  if (count) count.textContent = `Найдено: ${matches.length}`;
+  if (count) count.textContent = `Найдено: ${modelCountLabel(matches.length)}`;
+}
+
+function updateRangeDisplay(group) {
+  const metric = catalogMetrics[group.dataset.rangeFilter];
+  const minInput = group.querySelector("[data-range-min-input]");
+  const maxInput = group.querySelector("[data-range-max-input]");
+  const minValue = Number(minInput.value);
+  const maxValue = Number(maxInput.value);
+  const range = group.querySelector(".range-slider");
+  const domainMin = Number(group.dataset.domainMin);
+  const domainMax = Number(group.dataset.domainMax);
+  const start = ((minValue - domainMin) / (domainMax - domainMin)) * 100;
+  const end = ((maxValue - domainMin) / (domainMax - domainMin)) * 100;
+  range.style.setProperty("--range-start", `${start}%`);
+  range.style.setProperty("--range-end", `${end}%`);
+  group.querySelector("[data-range-min-label]").textContent = formatMetric(minValue, metric.unit);
+  group.querySelector("[data-range-max-label]").textContent = formatMetric(maxValue, metric.unit);
 }
 
 document.addEventListener("change", (event) => {
@@ -590,6 +720,15 @@ document.addEventListener("change", (event) => {
 });
 document.addEventListener("input", (event) => {
   if (event.target.matches("#product-search")) filterProducts();
+  if (event.target.matches("[data-range-min-input], [data-range-max-input]")) {
+    const group = event.target.closest("[data-range-filter]");
+    const minInput = group.querySelector("[data-range-min-input]");
+    const maxInput = group.querySelector("[data-range-max-input]");
+    if (event.target.matches("[data-range-min-input]") && Number(minInput.value) > Number(maxInput.value)) minInput.value = maxInput.value;
+    if (event.target.matches("[data-range-max-input]") && Number(maxInput.value) < Number(minInput.value)) maxInput.value = minInput.value;
+    updateRangeDisplay(group);
+    filterProducts();
+  }
 });
 document.addEventListener("submit", (event) => {
   const form = event.target;

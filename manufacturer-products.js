@@ -14,7 +14,15 @@ const manufacturerProduct = ({
   features,
 }) => ({
   id,
-  name: `${manufacturer} ${model}`,
+  name: `${({
+    painting: "Окрасочный аппарат",
+    putty: "Шпаклёвочная машина",
+    fire: "Аппарат для огнезащиты",
+    hydraulic: "Гидравлический распылитель",
+    texture: "Текстурный распылитель",
+    waterproof: "Аппарат для гидроизоляции",
+    marking: "Дорожная разметочная машина",
+  })[category] || "Оборудование"} ${model}`,
   shortName: model,
   model,
   manufacturer,
