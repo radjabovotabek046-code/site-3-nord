@@ -188,13 +188,12 @@ function pageHero(title, lead, crumb, theme = "blueprint") {
 }
 
 function comparisonSlider({ compact = false, caption = "Идеальный результат начинается с точного подбора техники." } = {}) {
-  // TODO: Replace the illustrated before/after scenes with matching real job-site photos from the customer.
+  // TODO: Replace these honest placeholders with matching real job-site photos from the customer.
   return `<section class="comparison-section ${compact ? "comparison-section--compact" : ""}">
     ${compact ? "" : `<div class="comparison-heading"><p class="eyebrow">Результат точной подачи</p><h2>Идеальный результат</h2><p>${caption}</p></div>`}
     <div class="comparison-slider ${compact ? "comparison-slider--compact" : ""}" data-comparison tabindex="0" role="slider" aria-label="Сравнение результата до и после работы" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" style="--split:50%">
-      <div class="comparison-art comparison-art--before" aria-hidden="true"></div>
-      <div class="comparison-art comparison-art--after" aria-hidden="true"></div>
-      <span class="comparison-label comparison-label--before">До</span><span class="comparison-label comparison-label--after">С оборудованием NORD</span>
+      <div class="comparison-art comparison-art--before" aria-hidden="true"><span class="comparison-placeholder">Пример: неровное покрытие</span></div>
+      <div class="comparison-art comparison-art--after" aria-hidden="true"><span class="comparison-placeholder">Пример: ровное покрытие оборудованием NORD</span></div>
       <span class="comparison-divider" aria-hidden="true"><span>↔</span></span>
     </div>
     ${compact ? "" : `<p class="comparison-caption">Сравните фактуру поверхности — плавно передвиньте разделитель.</p>`}
