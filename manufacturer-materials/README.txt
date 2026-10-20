@@ -4,9 +4,9 @@ Sources:
 - PUTTER product pages discovered from https://www.putter-spray.com/sitemap.xml
 - GUTUBAO product pages discovered from https://www.gtbtool.com/sitemap.xml
 
-The download includes 39 PUTTER product pages / 78 photos and 33 GUTUBAO product pages / 66 photos. catalog.csv records the source URL, captured manufacturer text, and image paths. Each source directory contains the downloaded page and its product images.
+The source archive contains 39 PUTTER product pages and 33 GUTUBAO product pages. catalog.csv records source URLs, captured manufacturer text, and image paths. Identical generic stock photos were removed rather than kept as product photos.
 
-36 selected models are connected to the local NORD catalog through manufacturer-products.js: 24 GUTUBAO models and 12 PUTTER models. Each selected listing uses at least two distinct manufacturer images. PT-1895 has separate standard and HD-pump source pages and includes images for both versions. PUTTER PT-9528-X reuses its existing NORD listing rather than creating a duplicate.
+36 selected models are connected to the NORD catalog through manufacturer-products.js: 24 GUTUBAO models and 12 PUTTER models. GUTUBAO listings use two model-specific photos each. PUTTER listings use only confirmed photos of the actual equipment; some models have one available photo, while PT-1895 includes standard and HD-pump versions. PUTTER PT-9528-X reuses its existing NORD listing rather than creating a duplicate.
 
 Catalog rules:
 - A listing only presents technical values captured from its linked manufacturer page; missing or truncated fields are omitted.
@@ -15,4 +15,4 @@ Catalog rules:
 - No price has been inferred for the added manufacturer listings; customers are directed to request current price, stock, and configuration.
 - The user confirmed written authorization to publish PUTTER materials.
 
-The selected product listings and manufacturer images are included in the public static site repository. Manufacturer source HTML and unselected images remain local and are not part of the website deployment.
+The customer-facing catalog copy, specification labels, and image descriptions are in Russian. Chinese or English markings printed on the manufacturers' equipment are retained in original photos so the products are not misrepresented. Source HTML and CSV files are research references and are not linked from the storefront.

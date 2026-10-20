@@ -35,10 +35,7 @@ const featuredProducts = [
     flowLpm: 10.5,
     specs: [["Мощность", "5 000 Вт"], ["Напряжение / частота", "220 В / 50–60 Гц"], ["Максимальная подача", "10,5 л/мин"], ["Система шланга", "QuickReel"], ["Гарантия", "2 года от магазина"], ["Тип", "Электрический, безвоздушный"]],
     images: [
-      ["putter-9528x-main.png", "PUTTER 9528-X QuickReel и параметры"],
-      ["putter-9528x-front.png", "PUTTER 9528-X, вид спереди"],
-      ["putter-9528x-rear.png", "PUTTER 9528-X, вид сзади"],
-      ["putter-9528x-kit.png", "Комплект PUTTER 9528-X"],
+      ["manufacturer-materials/PUTTER/PT-9528-X-High-Power-Electric-Paint-Sprayer-for-Large-Projects-PUTIAN/image-01.jpg", "PUTTER PT-9528-X — фото аппарата"],
     ],
     materials: "Густые шпаклёвки, краски и огнезащитные материалы.",
     featured: true,
@@ -187,19 +184,6 @@ function pageHero(title, lead, crumb, theme = "blueprint") {
   return `<section class="page-hero page-hero--${theme}"><div class="page-hero-particles" aria-hidden="true"><i></i><i></i><i></i></div>${pageTheme(theme)}<div class="container">${breadcrumbs(crumb)}<p class="eyebrow">NORD / ДАВЛЕНИЕ · ПОТОК · ТОЧНОСТЬ</p><h1>${title}</h1><p class="lead">${lead}</p><div class="hero-pressure-scale" aria-hidden="true"><span>0</span><i></i><span>MAX</span></div></div></section>`;
 }
 
-function comparisonSlider({ compact = false, caption = "Идеальный результат начинается с точного подбора техники." } = {}) {
-  // TODO: Replace these honest placeholders with matching real job-site photos from the customer.
-  return `<section class="comparison-section ${compact ? "comparison-section--compact" : ""}">
-    ${compact ? "" : `<div class="comparison-heading"><p class="eyebrow">Результат точной подачи</p><h2>Идеальный результат</h2><p>${caption}</p></div>`}
-    <div class="comparison-slider ${compact ? "comparison-slider--compact" : ""}" data-comparison tabindex="0" role="slider" aria-label="Сравнение результата до и после работы" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" style="--split:50%">
-      <div class="comparison-art comparison-art--before" aria-hidden="true"><span class="comparison-placeholder">Пример: неровное покрытие</span></div>
-      <div class="comparison-art comparison-art--after" aria-hidden="true"><span class="comparison-placeholder">Пример: ровное покрытие оборудованием NORD</span></div>
-      <span class="comparison-divider" aria-hidden="true"><span>↔</span></span>
-    </div>
-    ${compact ? "" : `<p class="comparison-caption">Сравните фактуру поверхности — плавно передвиньте разделитель.</p>`}
-  </section>`;
-}
-
 function contactBand(title = "Нужна помощь с подбором?", text = "Расскажите о задаче — поможем выбрать подходящее оборудование.") {
   return `<div class="contact-band"><div><h2>${title}</h2><p>${text}</p></div><a class="button button-primary" href="contacts.html">Связаться с Nord <span aria-hidden="true">↗</span></a></div>`;
 }
@@ -210,9 +194,8 @@ function renderHome() {
       <div class="hero-actions"><a class="button button-primary" href="catalog.html">Перейти в каталог <span>→</span></a><a class="button button-outline" href="rent.html">Аренда оборудования</a></div>
       <div class="hero-points"><span>Продажа и аренда</span><span>Подбор под задачу</span><span>Москва и доставка</span></div>
     </div>
-    <div class="hero-visual"><span class="hero-podium" aria-hidden="true"></span><img src="${asset(products[1], "putter-9528x-hero-transparent.png")}" alt="Окрасочный аппарат PUTTER 9528-X QuickReel"><div class="hero-stamp hero-chip hero-chip-model"><strong>PUTTER 9528-X</strong><span>Система QuickReel</span></div><div class="hero-stamp hero-chip hero-chip-flow"><strong>10,5 л/мин</strong><span>Максимальная подача</span></div><div class="hero-stamp hero-chip hero-chip-pressure"><strong>5 000 Вт</strong><span>Мощность</span></div><div class="hero-flow-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="hero-visual"><span class="hero-podium" aria-hidden="true"></span><img src="${productImage(products[1])}" alt="Окрасочный аппарат PUTTER 9528-X QuickReel"><div class="hero-stamp hero-chip hero-chip-model"><strong>PUTTER 9528-X</strong><span>Система QuickReel</span></div><div class="hero-stamp hero-chip hero-chip-flow"><strong>10,5 л/мин</strong><span>Максимальная подача</span></div><div class="hero-stamp hero-chip hero-chip-pressure"><strong>5 000 Вт</strong><span>Мощность</span></div><div class="hero-flow-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
   </div>${paintParticles()}</section>
-  <section class="section section-soft comparison-wrap">${comparisonSlider({ id: "home", caption: "Ровная подача материала помогает получить аккуратное покрытие на объекте." })}</section>
   <section class="section"><div class="container"><div class="benefit-strip"><div class="benefit"><span class="benefit-icon">↗</span><div><strong>Подбор техники</strong><span>С учётом задачи и материала</span></div></div><div class="benefit"><span class="benefit-icon">▣</span><div><strong>Продажа и аренда</strong><span>Варианты под ваш срок и объём</span></div></div><div class="benefit"><span class="benefit-icon">⌁</span><div><strong>Комплектующие</strong><span>Оснащение для рабочего процесса</span></div></div><div class="benefit"><span class="benefit-icon">⌖</span><div><strong>Москва</strong><span>Самовывоз и доставка</span></div></div></div></div></section>
   <section class="section section-soft"><div class="container"><div class="section-heading"><div><p class="eyebrow">Каталог NORD</p><h2>Оборудование<br>под ваши задачи</h2></div><p>Выберите направление — или расскажите, что предстоит сделать, и мы поможем сориентироваться.</p></div><div class="category-grid">${categories.map((item) => `<a class="category-card" href="category.html?category=${item.id}"><span class="category-number">${item.icon} / НАПРАВЛЕНИЕ</span><div><h3>${item.name}</h3><p>${item.description}</p></div><span class="category-arrow" aria-hidden="true">↗</span></a>`).join("")}</div></div></section>
   <section class="section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Выбор Nord</p><h2>Популярное оборудование</h2></div><a class="button button-outline" href="catalog.html">Весь каталог →</a></div><div class="product-grid">${products.filter((product) => product.featured).map(productCard).join("")}</div></div></section>
@@ -280,7 +263,7 @@ function renderProduct() {
   const hasPrice = Number.isFinite(product.price) && product.price > 0;
   return `${pageHero(product.name, product.description, product.shortName, "nozzle")}
   <section class="section"><div class="container"><div class="product-layout">
-    <div><div class="gallery-main">${pageTheme("nozzle")}<img data-gallery-main src="${productImage(product)}" alt="${product.images[0][1]}"></div><div class="gallery-thumbs" role="group" aria-label="Фотографии ${product.shortName}">${product.images.map(([file, alt], index) => `<button class="gallery-thumb" type="button" data-gallery-src="${asset(product, file)}" data-gallery-alt="${alt}" aria-label="Фото ${index + 1}: ${alt}" aria-pressed="${index === 0}"><img src="${asset(product, file)}" alt="" loading="lazy"></button>`).join("")}</div></div>
+    <div><div class="gallery-main"><img data-gallery-main src="${productImage(product)}" alt="${product.images[0][1]}"></div>${product.images.length > 1 ? `<div class="gallery-thumbs" role="group" aria-label="Фотографии ${product.shortName}">${product.images.map(([file, alt], index) => `<button class="gallery-thumb" type="button" data-gallery-src="${asset(product, file)}" data-gallery-alt="${alt}" aria-label="Фото ${index + 1}: ${alt}" aria-pressed="${index === 0}"><img src="${asset(product, file)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}</div>
     <div class="product-detail-copy"><span class="badge">${product.badge}</span><h1>${product.name}</h1><p>${product.description}</p><div class="detail-price">${hasPrice ? `${money.format(product.price)} ₽${product.oldPrice ? `<del>${money.format(product.oldPrice)} ₽</del>` : ""}` : "Цена и наличие по запросу"}</div><div class="detail-actions">${hasPrice ? `<button class="button button-primary" type="button" data-add-cart="${product.id}">Добавить в корзину</button>` : `<a class="button button-primary" href="${quoteUrl(product)}">Уточнить цену и наличие</a>`}<button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button></div><table class="spec-table"><tbody>${product.specs.map(([name, value]) => `<tr><th scope="row">${name}</th><td>${value}</td></tr>`).join("")}</tbody></table><div class="detail-section"><h3>Для каких материалов</h3><p>${product.materials}</p></div>${product.id === "putter-9528x" ? '<div class="detail-section"><h3>Гарантия</h3><p>2 года гарантии от магазина.</p></div>' : ""}${product.sourceUrl ? `<div class="detail-section product-source"><a href="${product.sourceUrl}" target="_blank" rel="noreferrer">Страница модели у производителя ↗</a></div>` : ""}<div class="detail-section"><h3>Комплектация</h3><p>Состав комплекта зависит от выбранной комплектации. Уточните его при заказе оборудования.</p></div></div>
   </div><section class="section"><div class="section-heading"><div><p class="eyebrow">Другие модели</p><h2>Похожие товары</h2></div></div><div class="product-grid">${products.filter((item) => item.id !== product.id && item.category === product.category).slice(0, 4).map(productCard).join("")}</div></section></div></section>`;
 }
@@ -720,86 +703,6 @@ function revealTargets(root = document) {
     }
   });
 }
-
-function updateComparisonSlider(slider, value) {
-  const position = Math.round(Math.min(100, Math.max(0, value)));
-  slider.style.setProperty("--split", `${position}%`);
-  slider.setAttribute("aria-valuenow", String(position));
-  slider.setAttribute("aria-valuetext", `До ${position} процентов, с оборудованием NORD ${100 - position} процентов`);
-}
-
-const comparisonDrags = new Map();
-document.addEventListener("pointerover", (event) => {
-  const slider = event.target.closest("[data-comparison]");
-  if (!slider || event.pointerType !== "mouse" || slider.dataset.previewed || slider.dataset.interacted || motionPreference.matches) return;
-  if (event.relatedTarget && slider.contains(event.relatedTarget)) return;
-  slider.dataset.previewed = "true";
-  slider.classList.add("is-previewing");
-  const startedAt = performance.now();
-  const duration = 3900;
-  const movePreview = (now) => {
-    if (!slider.isConnected || slider.dataset.interacted) {
-      slider.classList.remove("is-previewing");
-      return;
-    }
-    const progress = Math.min(1, (now - startedAt) / duration);
-    const segment = progress < 1 / 3
-      ? [50, 25, progress * 3]
-      : progress < 2 / 3
-        ? [25, 75, (progress - 1 / 3) * 3]
-        : [75, 50, (progress - 2 / 3) * 3];
-    const eased = (1 - Math.cos(segment[2] * Math.PI)) / 2;
-    updateComparisonSlider(slider, segment[0] + (segment[1] - segment[0]) * eased);
-    if (progress < 1) slider._comparisonPreview = requestAnimationFrame(movePreview);
-    else slider.classList.remove("is-previewing");
-  };
-  slider._comparisonPreview = requestAnimationFrame(movePreview);
-});
-
-document.addEventListener("pointerdown", (event) => {
-  const slider = event.target.closest("[data-comparison]");
-  if (!slider || event.button !== 0) return;
-  slider.dataset.interacted = "true";
-  slider.classList.add("is-dragging");
-  cancelAnimationFrame(slider._comparisonPreview);
-  slider.focus({ preventScroll: true });
-  slider.setPointerCapture(event.pointerId);
-  comparisonDrags.set(event.pointerId, slider);
-  const bounds = slider.getBoundingClientRect();
-  if (bounds.width) updateComparisonSlider(slider, (event.clientX - bounds.left) / bounds.width * 100);
-  event.preventDefault();
-});
-
-document.addEventListener("pointermove", (event) => {
-  const slider = comparisonDrags.get(event.pointerId);
-  if (!slider) return;
-  const bounds = slider.getBoundingClientRect();
-  if (bounds.width) updateComparisonSlider(slider, (event.clientX - bounds.left) / bounds.width * 100);
-});
-
-function finishComparisonDrag(event) {
-  const slider = comparisonDrags.get(event.pointerId);
-  if (!slider) return;
-  comparisonDrags.delete(event.pointerId);
-  slider.classList.remove("is-dragging");
-  if (slider.hasPointerCapture(event.pointerId)) slider.releasePointerCapture(event.pointerId);
-}
-
-document.addEventListener("pointerup", finishComparisonDrag);
-document.addEventListener("pointercancel", finishComparisonDrag);
-document.addEventListener("keydown", (event) => {
-  const slider = event.target.closest("[data-comparison]");
-  if (!slider) return;
-  const current = Number(slider.getAttribute("aria-valuenow")) || 50;
-  const increment = event.shiftKey ? 10 : 2;
-  if (event.key === "ArrowLeft" || event.key === "ArrowDown") updateComparisonSlider(slider, current - increment);
-  else if (event.key === "ArrowRight" || event.key === "ArrowUp") updateComparisonSlider(slider, current + increment);
-  else if (event.key === "Home") updateComparisonSlider(slider, 0);
-  else if (event.key === "End") updateComparisonSlider(slider, 100);
-  else return;
-  slider.dataset.interacted = "true";
-  event.preventDefault();
-});
 
 function animateReadings(root) {
   const stepNumber = root.querySelector(".step-num");
