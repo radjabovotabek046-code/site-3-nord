@@ -120,7 +120,7 @@ function renderHeader() {
   const active = (name) => page === name ? ' aria-current="page"' : "";
   document.querySelector("#site-header").innerHTML = `<header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="NORD — главная"><img class="brand-logo" src="assets/products/logo.png" alt="NORD — оборудование для малярных работ"></a>
+      <a class="brand" href="index.html" aria-label="NORD — главная"><img class="brand-logo" src="assets/products/logo.png" alt="NORD — оборудование для малярных работ"><svg class="brand-outline" viewBox="0 0 168 62" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="166.5" height="60.5" rx="10" ry="10" pathLength="1000"></rect></svg></a>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Открыть меню"><span></span><span></span></button>
       <nav class="site-nav" id="site-nav" aria-label="Основная навигация">
         <details class="nav-catalog"><summary>Каталог⌄</summary><div class="mega-menu">${categories.map((item) => `<a href="category.html?category=${item.id}">${item.name}</a>`).join("")}<a href="catalog.html">Все категории и товары →</a></div></details>
