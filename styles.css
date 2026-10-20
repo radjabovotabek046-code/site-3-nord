@@ -732,7 +732,6 @@ h1, h2 { letter-spacing: -.035em; }
   object-fit: contain;
   mix-blend-mode: multiply;
   filter: brightness(1.08) saturate(1.12);
-  -webkit-box-reflect: below -76% linear-gradient(transparent 40%, #8dbaff22 100%);
   animation: product-levitate 5s ease-in-out infinite;
   transition: filter .5s ease, transform .5s ease;
 }
