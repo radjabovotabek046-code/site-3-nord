@@ -55,6 +55,12 @@ const products = [...productMap.values()];
 const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
 let revealObserver;
 const revealSelector = ".page-hero, .gallery-main, .section-heading, .category-card, .category-tile, .product-card, .step-card, .article-card, .benefit, .info-card, .rent-card, .fact, .summary-card, .empty-state, .form-card, .login-card, .contact-band";
+const rentalTariffs = [
+  { id: "painting-compact", category: "painting", label: "Окраска · компактные задачи", model: "Аппараты 2–4 л/мин", minFlow: 2, maxFlow: 4, rates: [{ period: "1–2 дня", price: 1700 }, { period: "От 2 дней", price: 1500, minDays: 2 }] },
+  { id: "painting-volume", category: "painting", label: "Окраска · большой объём", model: "Аппараты 6–9 л/мин", minFlow: 6, maxFlow: 9, rates: [{ period: "1–3 дня", price: 2500 }, { period: "От 3 дней", price: 2000, minDays: 3 }] },
+  { id: "putty", category: "putty", label: "Шпаклёвочные работы", model: "Шнековая станция + компрессор", rates: [{ period: "1–2 дня", price: 2000 }, { period: "От 2 дней", price: 1500, minDays: 2 }] },
+  { id: "fire", category: "fire", label: "Огнезащитные материалы", model: "Аппарат для огнезащиты", rates: [{ period: "Стоимость", price: null }] },
+];
 
 const categories = [
   { id: "painting", name: "Окрасочное оборудование", description: "Аппараты для безвоздушного нанесения красок и покрытий.", icon: "01", children: [["Аппараты до 6 л/мин", "category.html?category=painting&flow=compact"], ["Аппараты от 10 л/мин", "category.html?category=painting&flow=high"], ["Модели с QuickReel", "category.html?category=painting&feature=quickreel"]] },
@@ -163,14 +169,159 @@ const getStored = (key, fallback) => {
 const setStored = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 let cart = getStored("nord-v2-cart", {});
 let favorites = getStored("nord-v2-favorites", []);
+const storedCommerceMode = getStored("nord_mode", null);
+let commerceMode = storedCommerceMode === "buy" || storedCommerceMode === "rent" ? storedCommerceMode : null;
+const currentCommerceMode = () => commerceMode || "buy";
 
 function productImage(product, index = 0) {
   return asset(product, product.images[index][0]);
 }
 
+function rentalOffer(product) {
+  if (product.category === "painting") {
+    const flowValues = Number.isFinite(product.flowLpm) ? [product.flowLpm] : modelMetricValues(product, "flow");
+    const tariff = rentalTariffs.find((item) => item.category === "painting"
+      && flowValues.length
+      && flowValues.every((flow) => flow >= item.minFlow && flow <= item.maxFlow));
+    if (!tariff) return null;
+    const rate = tariff.rates[tariff.rates.length - 1];
+    return { tariff, dailyRate: rate.price, minDays: rate.minDays };
+  }
+  const tariff = rentalTariffs.find((item) => item.category === product.category);
+  if (!tariff) return null;
+  if (!tariff.rates.length) return { tariff, dailyRate: null, minDays: null };
+  const rate = tariff.rates[tariff.rates.length - 1];
+  return { tariff, dailyRate: rate.price, minDays: rate.minDays };
+}
+
+function rentalUrl(product) {
+  return `contacts.html?rent=${encodeURIComponent(product.id)}`;
+}
+
+function commerceSwitchMarkup(product, mode = "buy", context = "card") {
+  const available = Boolean(rentalOffer(product));
+  const switchId = `commerce-${context}-${product.id}`;
+  const selectedMode = available ? mode : "unavailable";
+  const rentalButton = `<button id="${switchId}-rent" class="commerce-switch-option" type="button" data-commerce-mode="rent" data-product-id="${product.id}" aria-pressed="${mode === "rent" && available}" ${available ? "" : 'aria-disabled="true"'}>Арендовать</button>`;
+  return `<div class="commerce-switch" data-commerce-switch data-mode="${selectedMode}" role="group" aria-label="Способ получения ${product.shortName}">
+    <button id="${switchId}-buy" class="commerce-switch-option" type="button" data-commerce-mode="buy" data-product-id="${product.id}" aria-pressed="${mode === "buy"}">Купить</button>
+    ${available ? rentalButton : `<span class="commerce-disabled-option" title="Доступно только для продажи">${rentalButton}<span class="commerce-tooltip" role="tooltip">Доступно только для продажи</span></span>`}
+  </div>`;
+}
+
+function commerceOfferMarkup(product, mode = "buy", context = "card") {
+  const hasPrice = Number.isFinite(product.price) && product.price > 0;
+  if (mode === "rent") {
+    const offer = rentalOffer(product);
+    if (!offer) return `<div class="commerce-price commerce-price--unavailable" data-commerce-price><strong>Аренда недоступна</strong><span>Для этой модели не опубликован тариф аренды</span></div>
+      <a class="button button-outline commerce-action" href="${productUrl(product)}">Только продажа</a>`;
+    const tariffNote = offer.tariff.id === "putty" ? `<span class="commerce-rate-note">Тариф для шпаклёвочной станции; модель и комплект подтвердим</span>` : "";
+    return `<div class="commerce-price" data-commerce-price>${offer.dailyRate ? `<strong>${money.format(offer.dailyRate)} ₽</strong><span>/ сутки · от ${offer.minDays} дн.</span>${tariffNote}` : `<strong>Стоимость уточните</strong><span>Условия аренды огнезащитной техники</span>`}</div>
+      <a class="button button-primary commerce-action" href="${rentalUrl(product)}">${offer.dailyRate ? "Арендовать" : "Уточнить аренду"}</a>`;
+  }
+  return `<div class="commerce-price" data-commerce-price>${hasPrice ? `<strong>${money.format(product.price)} ₽</strong>${product.oldPrice ? `<del class="price-old">${money.format(product.oldPrice)} ₽</del>` : ""}` : `<strong class="price-request-label">Цена по запросу</strong>`}</div>
+    ${hasPrice ? `<button class="button button-primary commerce-action" type="button" data-add-cart="${product.id}">В корзину</button>` : `<a class="button button-outline commerce-action" href="${quoteUrl(product)}">Уточнить цену</a>`}`;
+}
+
+function breakEvenMarkup(product) {
+  const offer = rentalOffer(product);
+  if (!offer?.dailyRate || !Number.isFinite(product.price) || product.price <= 0) return "";
+  const days = Math.ceil(product.price / offer.dailyRate);
+  return `<p class="break-even-note">Планируете работу дольше? Покупка выгоднее примерно с <strong>${days} дней</strong> аренды по долгосрочному тарифу ${money.format(offer.dailyRate)} ₽/сутки. Без учёта доставки и комплектации.</p>`;
+}
+
+function globalCommerceSwitch(placement) {
+  const mode = currentCommerceMode();
+  const chosen = commerceMode !== null;
+  const hint = placement === "hero" && !chosen
+    ? `<p class="global-mode-hint" data-global-mode-hint>Выберите формат работы, чтобы мы показали подходящие цены и условия</p>`
+    : "";
+  return `<div class="global-mode-control global-mode-control--${placement}">
+    <div class="global-mode-switch" data-global-mode-switch data-mode="${mode}" data-chosen="${chosen}" role="group" aria-label="Глобальный режим покупки или аренды">
+      <button class="global-mode-option" type="button" data-global-mode="buy" aria-pressed="${chosen && mode === "buy"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5v10a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-10Z"/><path d="M4.5 8.5 12 13l7.5-4.5M12 13v7M8 6.3l7.5 4.5"/></svg><span>Купить</span></button>
+      <button class="global-mode-option" type="button" data-global-mode="rent" aria-pressed="${chosen && mode === "rent"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg><span>Арендовать</span></button>
+    </div>${hint}
+  </div>`;
+}
+
+function syncCommerceMode({ animate = false } = {}) {
+  const mode = currentCommerceMode();
+  const chosen = commerceMode !== null;
+  document.querySelectorAll("[data-global-mode-switch]").forEach((switcher) => {
+    switcher.dataset.mode = mode;
+    switcher.dataset.chosen = String(chosen);
+    switcher.querySelectorAll("[data-global-mode]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(chosen && option.dataset.globalMode === mode));
+      option.classList.toggle("is-pulsing", chosen && option.dataset.globalMode === mode && animate);
+    });
+  });
+  document.querySelectorAll("[data-global-mode-hint]").forEach((hint) => { hint.hidden = chosen; });
+  document.querySelectorAll("[data-mode-navigation]").forEach((link) => {
+    link.classList.toggle("is-mode-active", chosen && link.dataset.modeValue === mode);
+  });
+  const hero = document.querySelector(".hero");
+  if (hero) {
+    const renting = mode === "rent";
+    const copy = hero.querySelector("[data-hero-mode-copy]");
+    const primary = hero.querySelector("[data-hero-primary]");
+    const alternate = hero.querySelector("[data-hero-alternate]");
+    if (copy) copy.textContent = renting
+      ? "Арендуйте профессиональное оборудование на нужный срок — без лишних вложений. Поможем подобрать технику под ваш объект и материал."
+      : "Окрасочные аппараты, оборудование для шпаклёвки и огнезащиты — в продажу и аренду. Поможем подобрать решение под объект и материал.";
+    if (primary) {
+      primary.href = renting ? "rent.html" : "catalog.html";
+      primary.textContent = renting ? "Перейти к аренде" : "Перейти в каталог покупки";
+      primary.dataset.modeValue = mode;
+    }
+    if (alternate) {
+      alternate.href = renting ? "catalog.html" : "rent.html";
+      alternate.textContent = renting ? "или посмотреть покупку" : "или посмотреть аренду";
+      alternate.dataset.modeValue = renting ? "buy" : "rent";
+    }
+  }
+  document.querySelectorAll("[data-commerce-panel]").forEach((panel) => {
+    const product = products.find((item) => item.id === panel.dataset.productId);
+    if (!product) return;
+    panel.dataset.mode = mode;
+    const switcher = panel.querySelector("[data-commerce-switch]");
+    const available = Boolean(rentalOffer(product));
+    switcher.dataset.mode = available ? mode : "unavailable";
+    switcher.querySelectorAll("[data-commerce-mode]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(chosen && available && option.dataset.commerceMode === mode));
+    });
+    const offer = panel.querySelector("[data-commerce-offer]");
+    if (animate) offer.classList.remove("is-changing");
+    offer.innerHTML = commerceOfferMarkup(product, mode, panel.dataset.context);
+    if (animate) window.requestAnimationFrame(() => offer.classList.add("is-changing"));
+    const note = panel.querySelector(".break-even-note");
+    if (note) note.hidden = mode === "rent";
+  });
+}
+
+function setCommerceMode(mode, { persist = true } = {}) {
+  if (mode !== "buy" && mode !== "rent") return;
+  commerceMode = mode;
+  if (persist) setStored("nord_mode", mode);
+  syncCommerceMode({ animate: true });
+  window.setTimeout(() => {
+    document.querySelectorAll("[data-global-mode].is-pulsing").forEach((option) => option.classList.remove("is-pulsing"));
+  }, 520);
+}
+
+window.addEventListener("storage", (event) => {
+  if (event.key !== "nord_mode") return;
+  try {
+    const storedMode = event.newValue === null ? null : JSON.parse(event.newValue);
+    commerceMode = storedMode === "buy" || storedMode === "rent" ? storedMode : null;
+    syncCommerceMode({ animate: true });
+  } catch (error) {
+    console.error("Unable to read the saved purchase/rental mode", error);
+  }
+});
+
 function productCard(product, { featured = false } = {}) {
   const saved = favorites.includes(product.id);
-  const hasPrice = Number.isFinite(product.price) && product.price > 0;
+  const mode = currentCommerceMode();
   return `<article class="product-card${featured ? " product-card--focus" : ""}">
     <a class="product-card-image" href="${productUrl(product)}"><img src="${productImage(product)}" alt="${product.images[0][1]}" loading="lazy"></a>
     <div class="product-card-info">
@@ -180,8 +331,11 @@ function productCard(product, { featured = false } = {}) {
       <p>${product.description}</p>
       <div class="mini-specs">${product.specs.slice(0, 4).map(([name, value]) => `<span>${name}<strong>${value}</strong></span>`).join("")}</div>
       <div class="product-card-bottom">
-        ${hasPrice ? `<span class="price">${money.format(product.price)} ₽${product.oldPrice ? `<del class="price-old">${money.format(product.oldPrice)} ₽</del>` : ""}</span>` : `<span class="price-request-label">Цена по запросу</span>`}
-        <span class="actions-inline"><button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button>${hasPrice ? `<button class="button button-primary" type="button" data-add-cart="${product.id}" aria-label="Добавить ${product.shortName} в корзину">В корзину</button>` : `<a class="button button-outline" href="${quoteUrl(product)}">Уточнить цену</a>`}</span>
+        <div class="commerce-panel" data-commerce-panel data-product-id="${product.id}" data-context="card" data-mode="${mode}">
+          ${commerceSwitchMarkup(product, mode, "card")}
+          <div class="commerce-offer" data-commerce-offer>${commerceOfferMarkup(product, mode, "card")}</div>
+        </div>
+        <button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button>
       </div>
     </div>
   </article>`;
@@ -193,11 +347,13 @@ function renderHeader() {
   document.querySelector("#site-header").innerHTML = `<header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="NORD — главная"><img class="brand-logo" src="assets/products/logo.png" alt="NORD — оборудование для малярных работ"><svg class="brand-outline" viewBox="0 0 168 62" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="166.5" height="60.5" rx="10" ry="10" pathLength="1000"></rect></svg></a>
+      ${globalCommerceSwitch("header")}
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Открыть меню"><span></span><span></span></button>
-      <nav class="site-nav" id="site-nav" aria-label="Основная навигация">
-        <details class="nav-catalog"><summary>Каталог⌄</summary><div class="mega-menu">${categories.map((item) => `<a href="category.html?category=${item.id}">${item.name}</a>`).join("")}<a href="catalog.html">Все категории и товары →</a></div></details>
-        <a href="rent.html"${active("rent")}>Аренда</a><a href="delivery.html"${active("delivery")}>Доставка</a><a href="about.html"${active("about")}>О компании</a><a href="blog.html"${active("blog")}>Статьи</a><a href="contacts.html"${active("contacts")}>Контакты</a>
-      </nav>
+        <nav class="site-nav" id="site-nav" aria-label="Основная навигация">
+          <a href="catalog.html" data-mode-navigation data-mode-value="buy"${["catalog", "category", "product"].includes(page) ? ' aria-current="page"' : ""}>Купить</a>
+          <a href="rent.html" data-mode-navigation data-mode-value="rent"${active("rent")}>Арендовать</a>
+          <a href="delivery.html"${active("delivery")}>Доставка</a><a href="about.html"${active("about")}>О компании</a><a href="blog.html"${active("blog")}>Статьи</a><a href="contacts.html"${active("contacts")}>Контакты</a>
+        </nav>
       <div class="header-actions"><a class="icon-link" href="favorites.html" aria-label="Избранное">♡<span class="count" data-favorites-count>${favorites.length}</span></a><a class="icon-link" href="cart.html" aria-label="Корзина">▢<span class="count" data-cart-count>${Object.values(cart).reduce((a, b) => a + b, 0)}</span></a><a class="icon-link" href="account.html" aria-label="Личный кабинет">♙</a></div>
     </div>
   </header>`;
@@ -260,14 +416,27 @@ function contactBand(title = "Нужна помощь с подбором?", tex
   return `<div class="contact-band"><div><h2>${title}</h2><p>${text}</p></div><a class="button button-primary" href="contacts.html">Связаться с Nord <span aria-hidden="true">↗</span></a></div>`;
 }
 
+function homeCommerceSwitch() {
+  return globalCommerceSwitch("hero");
+}
+
+function purchaseTrustGrid() {
+  return `<div class="purchase-trust-grid">
+    <article class="info-card"><p class="eyebrow">Гарантия и сервис</p><h3>Условия по каждой модели</h3><p>Срок и порядок гарантийного обслуживания указываются для конкретного аппарата. Для PUTTER PT-9528-X действует 2 года гарантии от магазина.</p></article>
+    <article class="info-card"><p class="eyebrow">Получение · по России</p><h3>Доставка до вашего города</h3><p>Возможность отправки, сроки и стоимость согласуем по выбранной модели и адресу до оформления заказа.</p></article>
+    <article class="info-card"><p class="eyebrow">Юрлица и ИП</p><h3>Покупка для бизнеса</h3><p>Вариант оформления сделки и комплект закрывающих документов подтвердим при подготовке заказа.</p></article>
+    <article class="info-card"><p class="eyebrow">Оплата</p><h3>Условия до заказа</h3><p>Доступный способ оплаты и возможность рассрочки уточняйте у менеджера — подтвердим условия до оформления.</p></article>
+  </div>`;
+}
+
 function renderHome() {
-  return `<section class="hero"><div class="container hero-grid">
-    <div class="hero-copy"><p class="eyebrow">Оборудование для профессиональной отделки</p><h1>Техника для работы.<br><span>Подбор без лишнего.</span></h1><p>Окрасочные аппараты, оборудование для шпаклёвки и огнезащиты — в продажу и аренду. Поможем подобрать решение под объект и материал.</p>
-      <div class="hero-actions"><a class="button button-primary" href="catalog.html">Перейти в каталог <span>→</span></a><a class="button button-outline" href="rent.html">Аренда оборудования</a></div>
+  return `<section class="hero"><div class="container">${homeCommerceSwitch()}<div class="hero-grid">
+    <div class="hero-copy"><p class="eyebrow">Оборудование для профессиональной отделки</p><h1>Техника для работы.<br><span>Подбор без лишнего.</span></h1><p data-hero-mode-copy></p>
+      <div class="hero-mode-actions"><a class="button button-primary" data-hero-primary data-mode-navigation data-mode-value="${currentCommerceMode()}" href="${currentCommerceMode() === "rent" ? "rent.html" : "catalog.html"}">${currentCommerceMode() === "rent" ? "Перейти к аренде" : "Перейти в каталог покупки"}</a><a class="hero-alternate-link" data-hero-alternate data-mode-navigation data-mode-value="${currentCommerceMode() === "rent" ? "buy" : "rent"}" href="${currentCommerceMode() === "rent" ? "catalog.html" : "rent.html"}">${currentCommerceMode() === "rent" ? "или посмотреть покупку" : "или посмотреть аренду"}</a></div>
       <div class="hero-points"><span>Продажа и аренда</span><span>Подбор под задачу</span><span>Москва и доставка</span></div>
     </div>
     <div class="hero-visual"><span class="hero-podium" aria-hidden="true"></span><img src="assets/products/putter-9528x-cutout.png" alt="Окрасочный аппарат PUTTER 9528-X QuickReel"><div class="hero-stamp hero-chip hero-chip-model"><strong>PUTTER 9528-X</strong><span>Система QuickReel</span></div><div class="hero-stamp hero-chip hero-chip-flow"><strong>10,5 л/мин</strong><span>Максимальная подача</span></div><div class="hero-stamp hero-chip hero-chip-pressure"><strong>5 000 Вт</strong><span>Мощность</span></div><div class="hero-flow-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
-  </div>${paintParticles()}</section>
+  </div></div>${paintParticles()}</section>
   <section class="section"><div class="container"><div class="benefit-strip"><div class="benefit"><span class="benefit-icon">↗</span><div><strong>Подбор техники</strong><span>С учётом задачи и материала</span></div></div><div class="benefit"><span class="benefit-icon">▣</span><div><strong>Продажа и аренда</strong><span>Варианты под ваш срок и объём</span></div></div><div class="benefit"><span class="benefit-icon">⌁</span><div><strong>Комплектующие</strong><span>Оснащение для рабочего процесса</span></div></div><div class="benefit"><span class="benefit-icon">⌖</span><div><strong>Москва</strong><span>Самовывоз и доставка</span></div></div></div></div></section>
   <section class="section section-soft"><div class="container"><div class="section-heading"><div><p class="eyebrow">Каталог NORD</p><h2>Оборудование<br>под ваши задачи</h2></div><p>Выберите направление — или расскажите, что предстоит сделать, и мы поможем сориентироваться.</p></div><div class="category-grid">${categories.map((item) => `<a class="category-card" href="category.html?category=${item.id}"><span class="category-number">${item.icon} / НАПРАВЛЕНИЕ</span><div><h3>${item.name}</h3><p>${item.description}</p></div><span class="category-arrow" aria-hidden="true">↗</span></a>`).join("")}</div></div></section>
   <section class="section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Выбор Nord</p><h2>Популярное оборудование</h2></div><a class="button button-outline" href="catalog.html">Весь каталог →</a></div><div class="product-grid">${products.filter((product) => product.featured).map(productCard).join("")}</div></div></section>
@@ -331,7 +500,9 @@ function catalogGroupsMarkup(items) {
 function renderCatalog() {
   const visibleCategories = categories.filter((category) => products.some((product) => product.category === category.id));
   return `${pageHero("Каталог оборудования", "Профессиональная техника для окраски, шпаклёвки, огнезащиты, гидроизоляции и других отделочных задач.", "Каталог", "spray")}
-  <section class="section"><div class="container"><div class="category-tiles">${visibleCategories.map((item) => `<div class="category-tile"><a href="category.html?category=${item.id}"><strong>${item.name}</strong><span>${item.description}</span></a><div class="category-subcats">${item.children.map(([name, href]) => `<a href="${href}">${name} ↗</a>`).join("")}</div></div>`).join("")}</div><div class="section-heading"><div><p class="eyebrow">Модели и характеристики</p><h2>Оборудование в каталоге</h2></div><p>Цена и наличие моделей уточняются у менеджера. Технические данные приведены по материалам производителей.</p></div>${catalogListing()}<div style="margin-top:36px">${contactBand()}</div></div></section>`;
+  <section class="section"><div class="container"><div class="category-tiles">${visibleCategories.map((item) => `<div class="category-tile"><a href="category.html?category=${item.id}"><strong>${item.name}</strong><span>${item.description}</span></a><div class="category-subcats">${item.children.map(([name, href]) => `<a href="${href}">${name} ↗</a>`).join("")}</div></div>`).join("")}</div>
+    <div class="purchase-trust-heading"><p class="eyebrow">Покупка оборудования</p><h2>Понятные условия до заказа</h2></div>${purchaseTrustGrid()}
+    <div class="section-heading"><div><p class="eyebrow">Модели и характеристики</p><h2>Оборудование в каталоге</h2></div><p>Цена и наличие моделей уточняются у менеджера. Технические данные приведены по материалам производителей.</p></div>${catalogListing()}<div style="margin-top:36px">${contactBand()}</div></div></section>`;
 }
 
 function renderCategory() {
@@ -353,11 +524,17 @@ function renderCategory() {
 function renderProduct() {
   const product = products.find((item) => item.id === new URLSearchParams(location.search).get("id")) || products[0];
   const saved = favorites.includes(product.id);
-  const hasPrice = Number.isFinite(product.price) && product.price > 0;
+  const mode = currentCommerceMode();
   return `${pageHero(product.name, product.description, product.shortName, "nozzle")}
   <section class="section"><div class="container"><div class="product-layout">
     <div><div class="gallery-main"><img data-gallery-main src="${productImage(product)}" alt="${product.images[0][1]}"></div>${product.images.length > 1 ? `<div class="gallery-thumbs" role="group" aria-label="Фотографии ${product.shortName}">${product.images.map(([file, alt], index) => `<button class="gallery-thumb" type="button" data-gallery-src="${asset(product, file)}" data-gallery-alt="${alt}" aria-label="Фото ${index + 1}: ${alt}" aria-pressed="${index === 0}"><img src="${asset(product, file)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}</div>
-    <div class="product-detail-copy"><span class="badge">${product.badge}</span><h1>${product.name}</h1><p>${product.description}</p><div class="detail-price">${hasPrice ? `${money.format(product.price)} ₽${product.oldPrice ? `<del>${money.format(product.oldPrice)} ₽</del>` : ""}` : "Цена и наличие по запросу"}</div><div class="detail-actions">${hasPrice ? `<button class="button button-primary" type="button" data-add-cart="${product.id}">Добавить в корзину</button>` : `<a class="button button-primary" href="${quoteUrl(product)}">Уточнить цену и наличие</a>`}<button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button></div><table class="spec-table"><tbody>${product.specs.map(([name, value]) => `<tr><th scope="row">${name}</th><td>${value}</td></tr>`).join("")}</tbody></table><div class="detail-section"><h3>Для каких материалов</h3><p>${product.materials}</p></div>${product.id === "putter-9528x" ? '<div class="detail-section"><h3>Гарантия</h3><p>2 года гарантии от магазина.</p></div>' : ""}${product.sourceUrl ? `<div class="detail-section product-source"><a href="${product.sourceUrl}" target="_blank" rel="noreferrer">Страница модели у производителя ↗</a></div>` : ""}<div class="detail-section"><h3>Комплектация</h3><p>Состав комплекта зависит от выбранной комплектации. Уточните его при заказе оборудования.</p></div></div>
+    <div class="product-detail-copy"><span class="badge">${product.badge}</span><h1>${product.name}</h1><p>${product.description}</p>
+      <div class="detail-commerce-row"><div class="commerce-panel commerce-panel--detail" data-commerce-panel data-product-id="${product.id}" data-context="detail" data-mode="${mode}">
+        ${commerceSwitchMarkup(product, mode, "detail")}
+        <div class="commerce-offer" data-commerce-offer>${commerceOfferMarkup(product, mode, "detail")}</div>
+        ${breakEvenMarkup(product)}
+      </div><button class="icon-button ${saved ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="${saved ? "Убрать из избранного" : "В избранное"}" aria-pressed="${saved}">♡</button></div>
+      <table class="spec-table"><tbody>${product.specs.map(([name, value]) => `<tr><th scope="row">${name}</th><td>${value}</td></tr>`).join("")}</tbody></table><div class="detail-section"><h3>Для каких материалов</h3><p>${product.materials}</p></div>${product.id === "putter-9528x" ? '<div class="detail-section"><h3>Гарантия</h3><p>2 года гарантии от магазина.</p></div>' : ""}${product.sourceUrl ? `<div class="detail-section product-source"><a href="${product.sourceUrl}" target="_blank" rel="noreferrer">Страница модели у производителя ↗</a></div>` : ""}<div class="detail-section"><h3>Комплектация</h3><p>Состав комплекта зависит от выбранной комплектации. Уточните его при заказе оборудования.</p></div></div>
   </div><section class="section"><div class="section-heading"><div><p class="eyebrow">Другие модели</p><h2>Похожие товары</h2></div></div><div class="product-grid">${products.filter((item) => item.id !== product.id && item.category === product.category).slice(0, 4).map(productCard).join("")}</div></section></div></section>`;
 }
 
@@ -378,14 +555,8 @@ function renderAccount() {
 }
 
 function renderRent() {
-  const rates = [
-    ["Окраска · компактные задачи", "Аппараты 2–4 л", [["1–2 дня", "1 700 ₽ / сутки"], ["От 2 дней", "1 500 ₽ / сутки"]]],
-    ["Окраска · большой объём", "Аппараты 6–9 л", [["1–3 дня", "2 500 ₽ / сутки"], ["От 3 дней", "2 000 ₽ / сутки"]]],
-    ["Шпаклёвочные работы", "Шнековая станция + компрессор", [["1–2 дня", "2 000 ₽ / сутки"], ["От 2 дней", "1 500 ₽ / сутки"]]],
-    ["Огнезащитные материалы", "Аппарат для огнезащиты", [["Стоимость", "Уточните при обращении"]]],
-  ];
   return `${pageHero("Аренда оборудования", "Окрасочные аппараты, шпаклёвочные станции и техника для огнезащиты в Москве.", "Аренда", "rent")}
-  <section class="section"><div class="container"><div class="rent-grid">${rates.map(([tag, name, lines]) => `<article class="rent-card"><p class="eyebrow">${tag}</p><h3>${name}</h3>${lines.map(([period, price]) => `<div class="rent-price-line"><span>${period}</span><strong>${price}</strong></div>`).join("")}</article>`).join("")}</div><div class="info-grid" style="margin-top:16px"><article class="info-card"><p class="eyebrow">Срок аренды</p><h3>Краткосрочно и надолго</h3><p>Доступна долгосрочная аренда. Условия согласуются индивидуально.</p></article><article class="info-card"><p class="eyebrow">Для бизнеса</p><h3>Компании и ИП</h3><p>Работа с юридическими лицами и индивидуальными предпринимателями.</p></article><article class="info-card"><p class="eyebrow">Получение техники</p><h3>Доставка или самовывоз</h3><p>Доставка доступна по согласованию с Nord.</p></article></div><div class="section" style="padding-bottom:0"><div class="section-heading"><div><p class="eyebrow">Самовывоз и доставка</p><h2>Точка выдачи в Москве</h2></div></div><div class="address-card"><h3>Окружной проезд, 34Ас6</h3><p>Соколиная гора · 6–10 мин<br>Шоссе Энтузиастов · 11–15 мин<br>Сортировочная · 21–30 мин</p><a href="https://yandex.ru/maps/?text=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D0%9E%D0%BA%D1%80%D1%83%D0%B6%D0%BD%D0%BE%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B5%D0%B7%D0%B4%2C%2034%D0%90%D1%816" target="_blank" rel="noreferrer">Показать на карте ↗</a></div></div><div style="margin-top:30px">${contactBand("Уточнить аренду", "Согласуем доступность техники, срок, комплектацию и доставку.")}</div></div></section>`;
+  <section class="section"><div class="container"><div class="rent-grid">${rentalTariffs.map((tariff) => `<article class="rent-card"><p class="eyebrow">${tariff.label}</p><h3>${tariff.model}</h3>${tariff.rates.map(({ period, price }) => `<div class="rent-price-line"><span>${period}</span><strong>${price ? `${money.format(price)} ₽ / сутки` : "Уточните при обращении"}</strong></div>`).join("")}</article>`).join("")}</div><div class="info-grid" style="margin-top:16px"><article class="info-card"><p class="eyebrow">Срок аренды</p><h3>Краткосрочно и надолго</h3><p>Доступна долгосрочная аренда. Условия согласуются индивидуально.</p></article><article class="info-card"><p class="eyebrow">Для бизнеса</p><h3>Компании и ИП</h3><p>Работа с юридическими лицами и индивидуальными предпринимателями.</p></article><article class="info-card"><p class="eyebrow">Получение техники</p><h3>Доставка или самовывоз</h3><p>Доставка доступна по согласованию с Nord.</p></article></div><div class="section" style="padding-bottom:0"><div class="section-heading"><div><p class="eyebrow">Самовывоз и доставка</p><h2>Точка выдачи в Москве</h2></div></div><div class="address-card"><h3>Окружной проезд, 34Ас6</h3><p>Соколиная гора · 6–10 мин<br>Шоссе Энтузиастов · 11–15 мин<br>Сортировочная · 21–30 мин</p><a href="https://yandex.ru/maps/?text=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D0%9E%D0%BA%D1%80%D1%83%D0%B6%D0%BD%D0%BE%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B5%D0%B7%D0%B4%2C%2034%D0%90%D1%816" target="_blank" rel="noreferrer">Показать на карте ↗</a></div></div><div style="margin-top:30px">${contactBand("Уточнить аренду", "Согласуем доступность техники, срок, комплектацию и доставку.")}</div></div></section>`;
 }
 
 function renderAbout() {
@@ -472,13 +643,18 @@ function renderPage() {
     const messageField = document.querySelector("#contact-message");
     if (messageField && lines.length) messageField.value = `Интересует заказ:\n${lines.join("\n")}`;
   } else if (page === "contacts") {
-    const requestedProduct = products.find((product) => product.id === new URLSearchParams(location.search).get("product"));
+    const params = new URLSearchParams(location.search);
+    const rentalRequest = params.has("rent");
+    const requestedProduct = products.find((product) => product.id === (params.get("rent") || params.get("product")));
     const messageField = document.querySelector("#contact-message");
     if (requestedProduct && messageField) {
       const modelName = [requestedProduct.manufacturer, requestedProduct.model || requestedProduct.shortName].filter(Boolean).join(" ");
-      messageField.value = `Интересует модель ${modelName}. Прошу уточнить цену, наличие и комплектацию.`;
+      messageField.value = rentalRequest
+        ? `Интересует аренда модели ${modelName}. Прошу уточнить доступность, стоимость, сроки и комплектацию.`
+        : `Интересует модель ${modelName}. Прошу уточнить цену, наличие и комплектацию.`;
     }
   }
+  syncCommerceMode();
   decorateSensors(main);
   animateHeadlines(main);
   revealTargets(main);
@@ -569,8 +745,29 @@ function showToast(message) {
 }
 
 document.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-mode-navigation]");
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const mode = link.dataset.modeValue;
+  setCommerceMode(mode);
+  if (motionPreference.matches) return;
+  event.preventDefault();
+  link.classList.add("is-pressed");
+  window.setTimeout(() => link.classList.remove("is-pressed"), 100);
+  window.setTimeout(() => window.location.assign(link.href), 320);
+});
+
+document.addEventListener("click", (event) => {
   const target = event.target.closest("button");
   if (!target) return;
+  if (target.matches("[data-global-mode]")) {
+    setCommerceMode(target.dataset.globalMode);
+    return;
+  }
+  if (target.matches("[data-commerce-mode]")) {
+    if (target.getAttribute("aria-disabled") === "true") return;
+    setCommerceMode(target.dataset.commerceMode);
+    return;
+  }
   if (target.matches(".menu-toggle")) {
     const nav = document.querySelector("#site-nav");
     const open = target.getAttribute("aria-expanded") !== "true";
